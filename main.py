@@ -1,4 +1,9 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QLabel, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QVBoxLayout, QFrame, QHBoxLayout, QSizePolicy, QDialog
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, 
+                             QPushButton, QLabel, QGraphicsScene, 
+                             QGraphicsView, QGraphicsPixmapItem, 
+                             QVBoxLayout, QFrame, QHBoxLayout, 
+                             QSizePolicy, QDialog, QGridLayout, 
+                             QLineEdit,)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
 import sys
@@ -11,11 +16,11 @@ def main():
         def __init__(self):
             super().__init__()
             
-            self.setWindowTitle('Home')
+            self.setWindowTitle('Tikkit')
             self.setMinimumSize(1280, 720)
             self.setMaximumSize(1920, 1080)
 
-            self.room_scene = home_page.RoomScene()
+            self.room_scene = login_page.LoginPage()
             self.setCentralWidget(self.room_scene)
 
     app = QApplication(sys.argv)
