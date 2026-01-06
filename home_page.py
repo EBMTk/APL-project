@@ -1,54 +1,7 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QLabel, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QVBoxLayout, QFrame, QHBoxLayout, QSizePolicy
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QPushButton, QLabel, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QVBoxLayout, QFrame, QHBoxLayout, QSizePolicy, QDialog
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
 import sys
-
-class Camera(QGraphicsView):
-    def __init__(self, scene):
-        super().__init__(scene)
-
-        margin = 10
-
-        self.bottom_btn = QPushButton('==', self)
-        self.bottom_btn.setFixedSize(20, 10)
-        self.bottom_btn.setStyleSheet('background-color: #444; color: white; border: none;')
-        self.bottom_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-
-        self.side_btn = QPushButton('||', self)
-        self.side_btn.setFixedSize(10, 20)
-        self.side_btn.setStyleSheet('background-color: #444; color: white; border: none;')
-        self.side_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-
-        self.settings_btn = QPushButton('⏣', self)
-        self.settings_btn.setFixedSize(20, 20)
-        self.settings_btn.setStyleSheet('background-color: #444; color: white; border: none;')
-        self.settings_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-
-        self.money_indicator = QLabel('$Balling Hard', self)
-        self.money_indicator.setStyleSheet('''
-            color: white; 
-            font-size: 12px; 
-            background-color: rgba(0, 0, 0, 150);
-            padding: 3px;
-            border-radius: 4px;
-        ''')
-        self.money_indicator.move(self.settings_btn.width()+margin, margin)
-
-        self.update_button_positions()
-        self.settings_btn.move(margin, margin)
-
-    def resizeEvent(self, event):
-        '''Adjust button postions upon resize'''
-        super().resizeEvent(event)
-        self.update_button_positions()
-
-    def update_button_positions(self):
-        '''Adjust button postions'''
-        y_bot = self.height() - self.bottom_btn.height()
-        self.bottom_btn.move(0, y_bot)
-
-        x_side = self.width() - self.side_btn.width()
-        self.side_btn.move(x_side, 0)
 
 class RoomScene(QWidget):
     def __init__(self):
@@ -88,6 +41,8 @@ class RoomScene(QWidget):
         self.main_layout.addWidget(self.center_container)
         self.main_layout.addWidget(self.side_panel)
 
+        self.camera.req_settings.connect(self.setup_settings)
+
     def setup_side_panel(self):
         '''Create Side Panel'''
         self.side_panel = QFrame()
@@ -116,6 +71,13 @@ class RoomScene(QWidget):
 
         layout.addWidget(btn1)
         layout.addWidget(btn2)
+    
+    def setup_settings(self):
+        settings = QDialog(self)
+        settings.setWindowTitle("System Settings")
+        settings.setFixedSize(300, 200)
+        settings.exec()
+
         
     
     def toggle_bottom(self):
@@ -144,19 +106,52 @@ class RoomScene(QWidget):
 
         x_side = self.camera.width() - self.camera.side_btn.width()
         self.camera.side_btn.move(x_side, 0)
-    
-class TestWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        
-        self.setWindowTitle('Home')
-        self.setMinimumSize(1280, 720)
-        self.setMaximumSize(1920, 1080)
 
-        self.room_scene = RoomScene()
-        self.setCentralWidget(self.room_scene)
+class Camera(QGraphicsView):
+    req_settings = pyqtSignal()
+    def __init__(self, scene):
+        super().__init__(scene)
 
-app = QApplication(sys.argv)
-window = TestWindow()
-window.show()
-sys.exit(app.exec())
+        margin = 10
+
+        self.bottom_btn = QPushButton('==', self)
+        self.bottom_btn.setFixedSize(20, 10)
+        self.bottom_btn.setStyleSheet('background-color: #444; color: white; border: none;')
+        self.bottom_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self.side_btn = QPushButton('||', self)
+        self.side_btn.setFixedSize(10, 20)
+        self.side_btn.setStyleSheet('background-color: #444; color: white; border: none;')
+        self.side_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self.settings_btn = QPushButton('⏣', self)
+        self.settings_btn.setFixedSize(20, 20)
+        self.settings_btn.setStyleSheet('background-color: #444; color: white; border: none;')
+        self.settings_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.settings_btn.clicked.connect(self.req_settings.emit)
+
+        self.money_indicator = QLabel('$Balling Hard', self)
+        self.money_indicator.setStyleSheet('''
+            color: white; 
+            font-size: 12px; 
+            background-color: rgba(0, 0, 0, 150);
+            padding: 3px;
+            border-radius: 4px;
+        ''')
+        self.money_indicator.move(self.settings_btn.width()+margin, margin)
+
+        self.update_button_positions()
+        self.settings_btn.move(margin, margin)
+
+    def resizeEvent(self, event):
+        '''Adjust button postions upon resize'''
+        super().resizeEvent(event)
+        self.update_button_positions()
+
+    def update_button_positions(self):
+        '''Adjust button postions'''
+        y_bot = self.height() - self.bottom_btn.height()
+        self.bottom_btn.move(0, y_bot)
+
+        x_side = self.width() - self.side_btn.width()
+        self.side_btn.move(x_side, 0)
