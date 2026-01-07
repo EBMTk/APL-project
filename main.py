@@ -11,6 +11,8 @@ import sys
 import home_page
 import login_page
 
+# Testing
+
 def main():
     class TestWindow(QMainWindow):
         def __init__(self):
@@ -20,7 +22,7 @@ def main():
             self.setMinimumSize(1280, 720)
             self.setMaximumSize(1920, 1080)
 
-            self.room_scene = login_page.LoginPage()
+            self.room_scene = home_page.RoomScene()
             self.setCentralWidget(self.room_scene)
 
     app = QApplication(sys.argv)
