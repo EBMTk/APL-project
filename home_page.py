@@ -81,6 +81,7 @@ class RoomScene(QWidget):
         layout.addWidget(btn2)
     
     def setup_settings(self):
+        '''Create settings pop-up'''
         settings = QDialog(self)
         settings.setWindowTitle('System Settings')
         settings.setFixedSize(300, 200)
@@ -130,6 +131,7 @@ class RoomScene(QWidget):
         self.camera.side_btn.move(x_side, 0)
 
     def logout(self):
+        '''Signal logout for page change'''
         self.logout_signal.emit()
 
 class Camera(QGraphicsView):
