@@ -9,6 +9,9 @@ from PyQt6.QtGui import QPixmap
 import sys
 
 class RoomScene(QWidget):
+
+    logout_signal = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setMinimumSize(1280, 720)
@@ -79,11 +82,25 @@ class RoomScene(QWidget):
     
     def setup_settings(self):
         settings = QDialog(self)
-        settings.setWindowTitle("System Settings")
+        settings.setWindowTitle('System Settings')
         settings.setFixedSize(300, 200)
-        settings.exec()
-
         
+        layout = QVBoxLayout(settings)
+        layout.setSpacing(5)
+        layout.setContentsMargins(2, 2, 2, 2)
+        
+        logout_btn = QPushButton('Logout ➜]')
+        logout_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        logout_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        logout_btn.setFixedHeight(50)
+        logout_btn.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
+        logout_btn.clicked.connect(settings.accept)
+
+        layout.addStretch()
+        layout.addWidget(logout_btn)
+
+        if settings.exec():
+            self.logout()
     
     def toggle_bottom(self):
         '''Toggle bottom panel visability'''
@@ -111,6 +128,9 @@ class RoomScene(QWidget):
 
         x_side = self.camera.width() - self.camera.side_btn.width()
         self.camera.side_btn.move(x_side, 0)
+
+    def logout(self):
+        self.logout_signal.emit()
 
 class Camera(QGraphicsView):
     req_settings = pyqtSignal()
