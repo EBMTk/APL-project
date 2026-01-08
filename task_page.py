@@ -232,7 +232,11 @@ class TaskEntryWidget(QWidget):
 if __name__ == '__main__':
     app_instance = QApplication(sys.argv)
     main_window = QMainWindow()
+<<<<<<< HEAD
     main_window.setWindowTitle('Task Entry Test')
+=======
+    main_window.setWindowTitle("Task Entry")
+>>>>>>> origin/main
     entry_widget = TaskEntryWidget()
     entry_widget.task_ready_signal.connect(lambda obj: print(f'Object Received: {obj.description}'))
     main_window.setCentralWidget(entry_widget)
