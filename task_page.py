@@ -58,15 +58,15 @@ class TaskEntryWidget(QWidget):
         #Top Navigation
         top_nav_bar = QHBoxLayout()
         
-        self.btn_return_home = QPushButton("🏠︎")
+        self.btn_return_home = QPushButton('🏠︎')
         self.btn_return_home.setFixedSize(40, 40)
         self.btn_return_home.clicked.connect(lambda: self.main_page_signal.emit())
         
         self.task_description_input = QLineEdit()
-        self.task_description_input.setPlaceholderText("Enter Task Here...")
+        self.task_description_input.setPlaceholderText('Enter Task Here...')
         self.task_description_input.setFixedHeight(40)
         
-        self.btn_add_task = QPushButton("+")
+        self.btn_add_task = QPushButton('+')
         self.btn_add_task.setFixedSize(40, 40)
         self.btn_add_task.clicked.connect(self.fnc_emit_task_data)
 
@@ -77,12 +77,12 @@ class TaskEntryWidget(QWidget):
 
         #Split Task Controls
         split_control_row = QHBoxLayout()
-        self.chk_enable_split = QCheckBox("Split Task")
+        self.chk_enable_split = QCheckBox('Split Task')
         
         self.sld_subtask_level = QSlider(Qt.Orientation.Horizontal)
         self.sld_subtask_level.setRange(2, 5)
         self.sld_subtask_level.setEnabled(False)
-        self.lbl_subtask_count = QLabel("2")
+        self.lbl_subtask_count = QLabel('2')
 
         self.chk_enable_split.toggled.connect(self.sld_subtask_level.setEnabled)
         self.sld_subtask_level.valueChanged.connect(lambda val: self.lbl_subtask_count.setText(str(val)))
@@ -94,21 +94,21 @@ class TaskEntryWidget(QWidget):
 
         #Deadline check box
         deadline_row = QHBoxLayout()
-        self.chk_use_deadline = QCheckBox("Set Deadline")
+        self.chk_use_deadline = QCheckBox('Set Deadline')
         deadline_row.addWidget(self.chk_use_deadline)
         page_layout.addLayout(deadline_row)
 
         #Section: Icon Buttons
         self.image_button_row = QHBoxLayout()
-        img_btn_style = "QPushButton { border: none; background: transparent; padding: 0px; }"
+        img_btn_style = 'QPushButton { border: none; background: transparent; padding: 0px; }'
         
         self.btn_clock_display = QPushButton()
-        self.btn_clock_display.setIcon(QIcon("clock_icon.png")) 
+        self.btn_clock_display.setIcon(QIcon('clock_icon.png')) 
         self.btn_clock_display.clicked.connect(lambda: self.view_stack.setCurrentIndex(1))
         self.btn_clock_display.setStyleSheet(img_btn_style)
 
         self.btn_calendar_display = QPushButton()
-        self.btn_calendar_display.setIcon(QIcon("calendar_icon.png"))
+        self.btn_calendar_display.setIcon(QIcon('calendar_icon.png'))
         self.btn_calendar_display.clicked.connect(lambda: self.view_stack.setCurrentIndex(2))
         self.btn_calendar_display.setStyleSheet(img_btn_style)
 
@@ -124,7 +124,7 @@ class TaskEntryWidget(QWidget):
         page_layout = QVBoxLayout(view_page)
 
         header_layout = QHBoxLayout()
-        btn_back_to_main = QPushButton("<")
+        btn_back_to_main = QPushButton('<')
         btn_back_to_main.setFixedSize(40, 40)
         btn_back_to_main.clicked.connect(lambda: self.view_stack.setCurrentIndex(0))
         header_layout.addWidget(btn_back_to_main)
@@ -146,7 +146,7 @@ class TaskEntryWidget(QWidget):
         page_layout = QVBoxLayout(view_page)
 
         header_layout = QHBoxLayout()
-        btn_back_to_main = QPushButton("<")
+        btn_back_to_main = QPushButton('<')
         btn_back_to_main.setFixedSize(40, 40)
         btn_back_to_main.clicked.connect(lambda: self.view_stack.setCurrentIndex(0))
         header_layout.addWidget(btn_back_to_main)
@@ -162,7 +162,7 @@ class TaskEntryWidget(QWidget):
     def fnc_mark_date_red(self):
         self.date_calendar_widget.setDateTextFormat(QDate(), QTextCharFormat())
         red_format = QTextCharFormat()
-        red_format.setForeground(QColor("red"))
+        red_format.setForeground(QColor('red'))
         red_format.setFontWeight(QFont.Weight.Bold)
         current_selection = self.date_calendar_widget.selectedDate()
         self.date_calendar_widget.setDateTextFormat(current_selection, red_format)
@@ -173,7 +173,7 @@ class TaskEntryWidget(QWidget):
         if self.input_home_pos is None:
             self.input_home_pos = self.task_description_input.pos()
         
-        self.animation = QPropertyAnimation(self.task_description_input, b"pos")
+        self.animation = QPropertyAnimation(self.task_description_input, b'pos')
         self.animation.setDuration(250) 
         
         #Shake it off oh baby shake it offfff
@@ -199,8 +199,8 @@ class TaskEntryWidget(QWidget):
         date_val = None
         time_val = None
         if self.chk_use_deadline.isChecked():
-            date_val = self.date_calendar_widget.selectedDate().toString("yyyy-MM-dd")
-            time_val = self.time_selector_widget.time().toString("HH:mm")
+            date_val = self.date_calendar_widget.selectedDate().toString('yyyy-MM-dd')
+            time_val = self.time_selector_widget.time().toString('HH:mm')
 
         #object stuff
         new_task = TaskObject(desc, split_val, date_val, time_val)
@@ -213,7 +213,7 @@ class TaskEntryWidget(QWidget):
         self.chk_enable_split.setChecked(False)
         self.chk_use_deadline.setChecked(False)
         self.sld_subtask_level.setValue(2)
-        self.lbl_subtask_count.setText("2")
+        self.lbl_subtask_count.setText('2')
         self.date_calendar_widget.setSelectedDate(QDate.currentDate())
         self.date_calendar_widget.setDateTextFormat(QDate(), QTextCharFormat())
         self.time_selector_widget.setTime(QTime.currentTime())
@@ -229,12 +229,12 @@ class TaskEntryWidget(QWidget):
         self.btn_calendar_display.setIconSize(new_icon_size)
 
 #Execution Block
-if __name__ == "__main__":
+if __name__ == '__main__':
     app_instance = QApplication(sys.argv)
     main_window = QMainWindow()
-    main_window.setWindowTitle("Task Entry Test")
+    main_window.setWindowTitle('Task Entry Test')
     entry_widget = TaskEntryWidget()
-    entry_widget.task_ready_signal.connect(lambda obj: print(f"Object Received: {obj.description}"))
+    entry_widget.task_ready_signal.connect(lambda obj: print(f'Object Received: {obj.description}'))
     main_window.setCentralWidget(entry_widget)
     main_window.resize(600, 550)
     main_window.show()

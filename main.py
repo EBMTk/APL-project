@@ -10,6 +10,8 @@ import sys
 
 import home_page
 import login_page
+import stores_pages
+import task_page
 from data_manager import *
 
 uuid = None
