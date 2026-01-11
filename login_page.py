@@ -191,8 +191,7 @@ class LoginPage(QWidget):
         status, message = user_man.validate_and_login(entered_username, entered_password)
 
         if status:
-            self.login_user_input.clear()
-            self.login_pass_input.clear()
+            self.clear_inputs()
             self.switch_to_login()
             self.login_success.emit(user_man.current_uuid)
         else:
@@ -207,11 +206,16 @@ class LoginPage(QWidget):
         status, message = user_man.validate_and_register(entered_username, entered_password, confirmed_password)
 
         if status:
-            self.signup_user_input.clear()
-            self.signup_pass_input.clear()
-            self.signup_conf_pass_input.clear()
+            self.clear_inputs()
             self.switch_to_login()
             self.login_success.emit(user_man.current_uuid)
         else:
             self.bottom_label.setText(message)
             self.bottom_label.setStyleSheet(self.error_label_style)
+
+    def clear_inputs(self):
+        self.signup_user_input.clear()
+        self.signup_pass_input.clear()
+        self.signup_conf_pass_input.clear()
+        self.login_user_input.clear()
+        self.login_pass_input.clear()
