@@ -71,13 +71,13 @@ class RoomScene(QWidget):
         btn1.setCursor(Qt.CursorShape.PointingHandCursor)
         btn1.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         btn1.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
-        btn1.clicked.connect() # Inster signal here when u find out what this is
+        # btn1.clicked.connect() # Inster signal here when u find out what this is
 
         btn2 = QPushButton('WOH OMG ITS- wait i already did this')
         btn2.setCursor(Qt.CursorShape.PointingHandCursor)
         btn2.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         btn2.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
-        btn2.clicked.connect() # Inster signal here when u find out what this is
+        # btn2.clicked.connect() # Inster signal here when u find out what this is
 
         layout.addWidget(btn1)
         layout.addWidget(btn2)
