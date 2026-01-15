@@ -454,11 +454,11 @@ class ClothingView(QWidget):
         self.clothing_items = [
             ('T-Shirt', 20),
             ('Jeans', 40),
-            ('Jacket', 60),
+            ('sweater', 60),
             ('Sneakers', 50),
             ('Hat', 15),
             ('Sunglasses', 25),
-            ('Dress', 70),
+            ('skirt', 70),
             ('Boots', 80),
         ]
         self.init_ui()
