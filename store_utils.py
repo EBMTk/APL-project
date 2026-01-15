@@ -77,6 +77,18 @@ class UniversalStyles:
         QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; background: none; }}
         QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{ background: none; }}
         """
+    def button_style(self):
+        return f"""
+            QPushButton {{
+                background: {self.col_secondary};
+                border: 2px solid {self.col_text};
+                border-radius: 8px;
+                padding: 5px;
+                color: {self.col_text};
+                font-weight: bold;
+            }}
+            QPushButton:hover {{ background: {self.col_hover};}}
+        """
 
 ### STORE_HEADER ###
 class store_header(QWidget):
