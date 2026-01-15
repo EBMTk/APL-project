@@ -5,23 +5,25 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                              QApplication, QMainWindow)
 from PyQt6.QtCore import Qt, QDate, QTime, pyqtSignal, QSize, QPropertyAnimation, QPoint
 from PyQt6.QtGui import QTextCharFormat, QColor, QFont, QIcon
+from task_handler import ai_engine
 
 #Task Data Container
-class TaskObject:
-    '''
-    arguments(
-        self,
-        description,
-        subtasks,
-        date,
-        time,
-    )
-    '''
-    def __init__(self, description, subtasks, date, time):
-        self.description = description
-        self.subtasks = subtasks
-        self.date = date
-        self.time = time
+class TaskSpecifications():
+    def __init__(self, name, date_due, time_due, deadline, subdivisions=0, uuid=1):
+        self.uuid = uuid
+        self.taskid = 0
+        self.name = name
+        self.subdivisions = subdivisions
+        self.deadline = deadline
+        self.date_due = date_due
+        self.time_due = time_due
+
+        difficulty = ai_engine.get_task_diff(self.name)
+        self.reward = difficulty*10
+
+        self.subtasks = 0
+        if self.subdivisions:
+            self.subtasks = ai_engine.get_subtask_list(self.name, self.subdivisions)
 
 class TaskEntryWidget(QWidget):
     '''
@@ -198,12 +200,15 @@ class TaskEntryWidget(QWidget):
         
         date_val = None
         time_val = None
+
+        deadline = 0
         if self.chk_use_deadline.isChecked():
+            deadline = 1
             date_val = self.date_calendar_widget.selectedDate().toString('yyyy-MM-dd')
             time_val = self.time_selector_widget.time().toString('HH:mm')
 
         #object stuff
-        new_task = TaskObject(desc, split_val, date_val, time_val)
+        new_task = TaskSpecifications(desc, date_val, time_val, deadline, subdivisions=split_val)
         self.task_ready_signal.emit(new_task)
         self.fnc_reset_ui_inputs()
 
@@ -234,7 +239,7 @@ if __name__ == '__main__':
     main_window = QMainWindow()
     main_window.setWindowTitle('Task Entry Test')
     entry_widget = TaskEntryWidget()
-    entry_widget.task_ready_signal.connect(lambda obj: print(f'Object Received: {obj.description}'))
+    entry_widget.task_ready_signal.connect(lambda obj: print(f'Object Received: {obj.name}'))
     main_window.setCentralWidget(entry_widget)
     main_window.resize(600, 550)
     main_window.show()

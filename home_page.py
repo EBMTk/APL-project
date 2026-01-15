@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget,
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
 import sys
+import main
 
 class RoomScene(QWidget):
 
