@@ -104,18 +104,14 @@ def main():
             self.sync_money()
         
         def login(self, current_uuid):
-            user_task_list = task_handler.query_user_tasks(current_uuid)
-            self.home_page.update_task_panel(user_task_list)
-
-            self.setWindowTitle('Tikkit')
-            self.pages.setCurrentIndex(1)
             global uuid
             uuid = current_uuid
+            self.update_tasks()
+            self.setWindowTitle('Tikkit')
+            self.pages.setCurrentIndex(1)
         
         def switch_to_home(self):
-            global uuid
-            user_task_list = task_handler.query_user_tasks(uuid)
-            self.home_page.update_task_panel(user_task_list)
+            self.update_tasks()
             self.setWindowTitle('Tikkit')
             self.pages.setCurrentIndex(1)
         
@@ -142,8 +138,12 @@ def main():
             # we need to do for the home page too
 
         def remove_and_update_tasks(self, taskid):
-            global uuid
             task_handler.task_deletion(taskid)
+            self.update_tasks()
+            
+
+        def update_tasks(self):
+            global uuid
             user_task_list = task_handler.query_user_tasks(uuid)
             self.home_page.update_task_panel(user_task_list)
         
