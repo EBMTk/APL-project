@@ -140,8 +140,6 @@ def main():
         def remove_and_update_tasks(self, taskid):
             task_handler.task_deletion(taskid)
             self.update_tasks()
-            
-
         def update_tasks(self):
             global uuid
             user_task_list = task_handler.query_user_tasks(uuid)

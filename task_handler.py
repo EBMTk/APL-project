@@ -149,6 +149,8 @@ class TaskDataHandler():
             for row in rows:
                 row_data = dict(row) 
                 row_data['subtasks'] = None 
+                if row_data['subdivisons'] != 0:
+                    pass
                 user_task = UserTask(**row_data)
                 user_task_list.append(user_task)
 
