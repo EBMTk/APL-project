@@ -11,7 +11,6 @@ from task_handler import ai_engine
 class TaskSpecifications():
     def __init__(self, name, date_due, time_due, deadline, subdivisions=0, uuid=1):
         self.uuid = uuid
-        self.taskid = 0
         self.name = name
         self.subdivisions = subdivisions
         self.deadline = deadline
@@ -26,15 +25,8 @@ class TaskSpecifications():
             self.subtasks = ai_engine.get_subtask_list(self.name, self.subdivisions)
 
 class TaskEntryWidget(QWidget):
-    '''
-    arguments(
-        self,
-        parent,
-    )
-    '''
-
     #Signal
-    main_page_signal = pyqtSignal()
+    request_main_page = pyqtSignal()
     task_ready_signal = pyqtSignal(object)
 
     def __init__(self, parent=None):
@@ -62,7 +54,7 @@ class TaskEntryWidget(QWidget):
         
         self.btn_return_home = QPushButton('🏠︎')
         self.btn_return_home.setFixedSize(40, 40)
-        self.btn_return_home.clicked.connect(lambda: self.main_page_signal.emit())
+        self.btn_return_home.clicked.connect(lambda: self.request_main_page.emit())
         
         self.task_description_input = QLineEdit()
         self.task_description_input.setPlaceholderText('Enter Task Here...')
@@ -208,7 +200,7 @@ class TaskEntryWidget(QWidget):
             time_val = self.time_selector_widget.time().toString('HH:mm')
 
         #object stuff
-        new_task = TaskSpecifications(desc, date_val, time_val, deadline, subdivisions=split_val)
+        new_task = TaskSpecifications(desc, date_val, time_val, deadline, subdivisions=split_val, uuid=self.current_uuid)
         self.task_ready_signal.emit(new_task)
         self.fnc_reset_ui_inputs()
 
@@ -232,15 +224,6 @@ class TaskEntryWidget(QWidget):
         new_icon_size = QSize(scaled_dim, scaled_dim)
         self.btn_clock_display.setIconSize(new_icon_size)
         self.btn_calendar_display.setIconSize(new_icon_size)
-
-#Execution Block
-if __name__ == '__main__':
-    app_instance = QApplication(sys.argv)
-    main_window = QMainWindow()
-    main_window.setWindowTitle('Task Entry Test')
-    entry_widget = TaskEntryWidget()
-    entry_widget.task_ready_signal.connect(lambda obj: print(f'Object Received: {obj.name}'))
-    main_window.setCentralWidget(entry_widget)
-    main_window.resize(600, 550)
-    main_window.show()
-    sys.exit(app_instance.exec())
+    
+    def update_uuid(self, uuid):
+        self.current_uuid = uuid
