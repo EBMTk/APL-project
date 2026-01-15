@@ -12,6 +12,8 @@ import main
 class RoomScene(QWidget):
 
     logout_signal = pyqtSignal()
+    request_clothing_store = pyqtSignal()
+    request_furniture_store = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -68,17 +70,17 @@ class RoomScene(QWidget):
         layout.setSpacing(5)
         layout.setContentsMargins(2, 2, 2, 2)
 
-        btn1 = QPushButton('WOH OMG ITS A SHOP')
+        btn1 = QPushButton('Open Clothing Store')
         btn1.setCursor(Qt.CursorShape.PointingHandCursor)
         btn1.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         btn1.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
-        # btn1.clicked.connect() # Inster signal here when u find out what this is
+        btn1.clicked.connect(self.request_clothing_store.emit)
 
-        btn2 = QPushButton('WOH OMG ITS- wait i already did this')
+        btn2 = QPushButton('Open Furniture Store')
         btn2.setCursor(Qt.CursorShape.PointingHandCursor)
         btn2.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         btn2.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
-        # btn2.clicked.connect() # Inster signal here when u find out what this is
+        btn2.clicked.connect(self.request_furniture_store.emit)
 
         layout.addWidget(btn1)
         layout.addWidget(btn2)
