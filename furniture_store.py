@@ -427,7 +427,7 @@ class FurnitureView(QWidget):
         return data
             
 
-    def load_layout(self, data):
+    def load_layout(self, data=None):
         if data:
             placed_data = data.get('placed_furniture', [])
         else:

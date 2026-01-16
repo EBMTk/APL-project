@@ -31,7 +31,7 @@ class RoomScene(QWidget):
 
         # No longer Fake Hopefully
         self.scene = QGraphicsScene()
-        self.scene.setSceneRect(0, 0, 800, 600)
+        self.scene.setSceneRect(0, 0, 600, 600)
 
         #The Camera View
         self.camera = Camera(self.scene)
