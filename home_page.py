@@ -17,7 +17,7 @@ class RoomScene(QWidget):
     request_furniture_store = pyqtSignal()
     request_task_entry = pyqtSignal()
     request_task_status_update = pyqtSignal(int, int)
-    request_subtask_status_update = pyqtSignal(int, int, int)
+    request_subtask_status_update = pyqtSignal(object, int, int, int)
     request_task_removal = pyqtSignal(int)
 
     def __init__(self, game_data):
@@ -167,7 +167,10 @@ class RoomScene(QWidget):
             if user_task_list[i].subdivisions != 0:
                 card = UserDivTaskCard(user_task_list[i])
                 card.update_task_status_database.connect(self.request_task_status_update.emit)
-                card.update_subtask_status_database.connect(self.request_subtask_status_update.emit)
+                card.update_subtask_status_database.connect(
+                    lambda status, subtask_id, taskid: 
+                    self.request_subtask_status_update.emit(card, status, subtask_id, taskid)
+                )
                 card.delete_request.connect(self.request_task_removal.emit)
                 card_list.append(card)
             else:
@@ -178,6 +181,9 @@ class RoomScene(QWidget):
 
         for card in card_list:
             self.card_container_layout.addWidget(card)
+
+    def update_divtask_label(self, card, status):
+        card.update_center_label(status)
     
     def update_button_positions(self):
         '''Adjust button postions'''
@@ -552,14 +558,14 @@ class UserDivTaskCard(QFrame):
 
     def subtask_status_updated(self, checked, subtask_id, checkbox):
         self.update_subtask_status_database.emit(int(checked), subtask_id, self.taskid)
-        
-        # font = self.center_label.font()
-        # font.setStrikeOut(bool(self.full_task_status))
-        # self.center_label.setFont(font)
-        
         font = checkbox.font()
         font.setStrikeOut(checked)
         checkbox.setFont(font)
+
+    def update_center_label(self, status):
+        font = self.center_label.font()
+        font.setStrikeOut(bool(status))
+        self.center_label.setFont(font)
 
     def toggle_subtask_container(self):
         if self.subtasks_container.isVisible():
