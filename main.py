@@ -12,7 +12,7 @@ import sys
 from home_page import RoomScene, UserTaskCard
 from login_page import LoginPage
 from data_manager import *
-from store_utils import UniversalStyles
+from store_utils import GameData
 from clothing_store import ClothingView
 from furniture_store import FurnitureView
 from task_page import TaskEntryWidget
@@ -31,33 +31,14 @@ def main():
             self.setWindowTitle('Tikkit - Login')
             self.setMinimumSize(1280, 720)
             self.setMaximumSize(1920, 1080)
-            
-            # Initialize user data structure
-            self.data = {
-                'money': 1000,
-                'inventory_clothes': [],
-                'worn_clothes': [],
-                'equipped_clothes': [],
-                'inventory_furniture': [],
-                'placed_furniture': []
-            }
-            
-            # Initialize Theme
-            self.styles = UniversalStyles(
-                primary="#f8f8f8",
-                secondary="#ffffff",
-                border="#000000",
-                hover="#a9a9a9",
-                text="#000000",
-                scroll="#888888",
-                scroll_hover="#555555"
-            )
-            
+
+            self.game_data = GameData()
+                      
             # Create pages
             self.login_page = LoginPage()
-            self.home_page = RoomScene()
-            self.clothing_view = ClothingView(self, self.styles)
-            self.furniture_view = FurnitureView(self, self.styles)
+            self.home_page = RoomScene(self.game_data)
+            self.clothing_view = ClothingView(self.game_data)
+            self.furniture_view = FurnitureView(self.game_data)
             self.task_entry = TaskEntryWidget()
             
             # stack with all pages
@@ -114,6 +95,7 @@ def main():
         def switch_to_home(self):
             self.update_tasks()
             self.setWindowTitle('Tikkit')
+            self.home_page.refresh_view()
             self.pages.setCurrentIndex(1)
         
         def switch_to_clothing(self):
