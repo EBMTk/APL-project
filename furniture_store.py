@@ -418,18 +418,21 @@ class FurnitureView(QWidget):
 
         return data   
     def save_layout(self):
-        placed_data = self.game_data.placed_furniture
-        owned_furniture = self.game_data.inventory_furniture #Not from the main anymore!
+        data = {
+            'placed_furniture': self.game_data.placed_furniture,
+            'inventory_furniture': self.game_data.inventory_furniture
+        }
+        #THIS IS FOR OMAR  TO SEE HOW IT SAVES
+        print(data)
+        return data
+            
 
-        #THIS IS FOR OMAR  TO SAVE THE FURNITURE LAYOUT AND INVENTORY TO THE DATABASE
-        print("what to save")
-        print(f'owned furniture: {owned_furniture}') 
-        print(f'total no. placed: {len(placed_data)}')
-        for item in placed_data:
-            print(item)
-
-    def load_layout(self):
-        placed_data = self.game_data.placed_furniture
+    def load_layout(self, data):
+        if data:
+            placed_data = data.get('placed_furniture', [])
+        else:
+            placed_data = self.game_data.placed_furniture
+            
         for item_data in placed_data:
             name = item_data['name']
             image_paths = []
