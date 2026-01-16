@@ -3,7 +3,8 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget,
                              QGraphicsView, QGraphicsPixmapItem, 
                              QVBoxLayout, QFrame, QHBoxLayout, 
                              QSizePolicy, QDialog, QGridLayout, 
-                             QLineEdit, QCheckBox, QScrollArea)
+                             QLineEdit, QCheckBox, QScrollArea,
+                             QLayout,)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
 import sys
@@ -15,6 +16,7 @@ class RoomScene(QWidget):
     request_furniture_store = pyqtSignal()
     request_task_entry = pyqtSignal()
     request_task_status_update = pyqtSignal(int, int)
+    request_subtask_status_update = pyqtSignal(int, int, int)
     request_task_removal = pyqtSignal(int)
 
     def __init__(self):
@@ -79,14 +81,13 @@ class RoomScene(QWidget):
 
         task_entry_nav = QPushButton('Add Task')
         task_entry_nav.setCursor(Qt.CursorShape.PointingHandCursor)
-        task_entry_nav.setFixedSize(280, 30)
+        task_entry_nav.setFixedSize(300, 30)
         task_entry_nav.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
         task_entry_nav.clicked.connect(self.request_task_entry.emit)
 
         self.scroll_area.setWidget(self.card_container)
         layout.addWidget(self.scroll_area)
 
-        layout.addStretch()
         layout.addWidget(task_entry_nav)        
     
     def setup_bottom_panel(self):
@@ -165,10 +166,17 @@ class RoomScene(QWidget):
 
         card_list = []
         for i in range(len(user_task_list)):
-            card = UserTaskCard(user_task_list[i])
-            card.update_task_status_database.connect(self.request_task_status_update.emit)
-            card.delete_request.connect(self.request_task_removal.emit)
-            card_list.append(card)
+            if user_task_list[i].subdivisions != 0:
+                card = UserDivTaskCard(user_task_list[i])
+                card.update_task_status_database.connect(self.request_task_status_update.emit)
+                card.update_subtask_status_database.connect(self.request_subtask_status_update.emit)
+                card.delete_request.connect(self.request_task_removal.emit)
+                card_list.append(card)
+            else:
+                card = UserTaskCard(user_task_list[i])
+                card.update_task_status_database.connect(self.request_task_status_update.emit)
+                card.delete_request.connect(self.request_task_removal.emit)
+                card_list.append(card)
 
         for card in card_list:
             self.card_container_layout.addWidget(card)
@@ -233,11 +241,6 @@ class Camera(QGraphicsView):
 
         x_side = self.width() - self.side_btn.width()
         self.side_btn.move(x_side, 0)
-
-
-# 280 60
-from PyQt6.QtWidgets import QFrame, QGridLayout, QCheckBox, QLabel, QPushButton, QSizePolicy
-from PyQt6.QtCore import Qt
 
 class UserTaskCard(QFrame):
     update_task_status_database = pyqtSignal(int, int)
@@ -320,6 +323,9 @@ class UserTaskCard(QFrame):
         self.checkbox = QCheckBox(f'{user_task.name}')
         self.checkbox.setCursor(Qt.CursorShape.PointingHandCursor)
         self.checkbox.setChecked(True if user_task.status == 1 else False)
+        font = self.checkbox.font()
+        font.setStrikeOut(self.checkbox.isChecked())
+        self.checkbox.setFont(font)
         layout.addWidget(self.checkbox, 1, 0, 1, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
 
         self.checkbox.toggled.connect(self.task_status_updated)
@@ -348,7 +354,185 @@ class UserTaskCard(QFrame):
 
     def task_status_updated(self, checked):
         self.update_task_status_database.emit(int(checked), self.taskid)
+        font = self.checkbox.font()
+        font.setStrikeOut(checked)
+        self.checkbox.setFont(font)
 
-# class UserDivTaskCard(QFrame):
-#     def __init__(self, user_task):
-#         pass
+class UserDivTaskCard(QFrame):
+    update_task_status_database = pyqtSignal(int, int)
+    update_subtask_status_database = pyqtSignal(int, int, int)
+    delete_request = pyqtSignal(int)
+
+    def __init__(self, user_task):
+        super().__init__()
+        self.setObjectName("Card") 
+        self.setFixedWidth(280)
+        
+        self.taskid = user_task.taskid
+
+        self.full_task_status = user_task.status
+
+        self.setStyleSheet("""
+            #Card {
+                background-color: #444; 
+                color: white; 
+                border: 1px solid #666; 
+                border-radius: 4px;
+            }
+
+            /* --- Checkbox Styling --- */
+            QCheckBox {
+                spacing: 8px; 
+                font-size: 12px; 
+                color: white;
+                background: transparent;
+                border: none;
+                margin-left: 5px; 
+            }
+            QCheckBox::indicator {
+                width: 15px;   
+                height: 15px;
+                border: 2px solid #ccc; 
+                border-radius: 4px;
+                background: #333; 
+            }
+            QCheckBox::indicator:checked {
+                background-color: #4CAF50;
+                border: 2px solid #4CAF50;
+            }
+
+            /* --- Labels (Metadata) --- */
+            QLabel {
+                color: #AAA; 
+                font-size: 9px; 
+                background: transparent;
+                border: none;
+                padding: 0px; margin: 0px; 
+            }
+
+            /* --- Action Button --- */
+            QPushButton {
+                background-color: #555;
+                color: white;
+                border: none;
+                /* Optional: Since it's now floating, you might want all corners rounded? 
+                   I kept your original right-side rounding for now. */
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+                /* If you want it fully rounded like a pill, uncomment this:
+                border-radius: 4px; 
+                */
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #666; }
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
+
+        main_card_container = QWidget()
+        main_card_container.setFixedSize(280, 60)
+        main_card_layout = QGridLayout(main_card_container)
+        main_card_layout.setSpacing(0)
+        main_card_layout.setContentsMargins(5, 2, 5, 2)
+
+        main_card_layout.setRowStretch(0, 0)
+        main_card_layout.setRowStretch(1, 1) 
+        main_card_layout.setRowStretch(2, 0)
+
+        self.reward_label = QLabel(f"${user_task.reward}")
+        self.reward_label.setStyleSheet("padding-right: 5px;")
+        main_card_layout.addWidget(self.reward_label, 0, 1, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+
+        self.center_container = QWidget()
+        self.center_container_layout = QHBoxLayout(self.center_container)
+        self.center_container_layout.setSpacing(5)
+        self.center_container_layout.setContentsMargins(5, 0, 0, 0)
+        
+        self.menu_btn = QPushButton(">")
+        self.menu_btn.setFixedSize(18, 18)
+        self.menu_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.menu_btn.clicked.connect(self.toggle_subtask_container)
+
+        self.center_label = QLabel(f'{user_task.name}')
+        self.center_label.setStyleSheet('spacing: 8px; font-size: 14px; color: white; background: transparent; border: none;')
+
+        self.center_container_layout.addWidget(self.menu_btn)
+        self.center_container_layout.addWidget(self.center_label)
+        main_card_layout.addWidget(self.center_container, 1, 0, 1, 2, alignment=Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+
+        self.time_due_label = QLabel(f"{user_task.time_due}" if user_task.deadline != 0 else "")
+        self.time_due_label.setStyleSheet("padding-left: 2px;") 
+        main_card_layout.addWidget(self.time_due_label, 2, 0, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
+
+        self.date_due_label = QLabel(f"{user_task.date_due}" if user_task.deadline != 0 else "")
+        self.date_due_label.setStyleSheet("padding-right: 5px;")
+        main_card_layout.addWidget(self.date_due_label, 2, 1, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+
+        self.delete_btn = QPushButton("✘")
+        self.delete_btn.setFixedWidth(25)
+        self.delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.delete_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        self.delete_btn.setStyleSheet('background-color: transparent; color: #ff6666; font-size: 20px; border: none;')
+        main_card_layout.addWidget(self.delete_btn, 0, 2, 3, 1)
+
+        self.delete_btn.clicked.connect(lambda: self.delete_request.emit(self.taskid))
+
+        main_card_layout.setColumnStretch(0, 1) 
+        main_card_layout.setColumnStretch(1, 0) 
+        main_card_layout.setColumnStretch(2, 0)
+
+        self.subtasks_container = QWidget()
+        self.subtasks_container_layout = QVBoxLayout(self.subtasks_container)
+        self.subtasks_container_layout.setSpacing(5)
+        self.subtasks_container_layout.setContentsMargins(20, 0, 5, 5)
+        self.add_checkbox_list(user_task.subtasks)
+
+        self.subtasks_container_layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
+
+        layout.addWidget(main_card_container)
+        layout.addWidget(self.subtasks_container)
+        self.subtasks_container.hide()
+        layout.addStretch()
+
+    def add_checkbox_list(self, subtask_list):
+        for subtask in subtask_list:
+            checkbox = QCheckBox(f'{subtask['name']}')
+            checkbox.setCursor(Qt.CursorShape.PointingHandCursor)
+            checkbox.setChecked(True if subtask['status'] == 1 else False)
+            font = checkbox.font()
+            font.setStrikeOut(checkbox.isChecked())
+            checkbox.setFont(font)
+            checkbox.toggled.connect(
+                lambda checked, subtask_id=subtask['subtask_id'], chk = checkbox: 
+                self.subtask_status_updated(checked, subtask_id, chk)
+                )
+            self.subtasks_container_layout.addWidget(checkbox)
+        self.subtasks_container_layout.addStretch()
+
+    def subtask_status_updated(self, checked, subtask_id, checkbox):
+        self.update_subtask_status_database.emit(int(checked), subtask_id, self.taskid)
+        
+        font = self.center_label.font()
+        font.setStrikeOut(bool(self.full_task_status))
+        self.center_label.setFont(font)
+        
+        font = checkbox.font()
+        font.setStrikeOut(checked)
+        checkbox.setFont(font)
+
+    def toggle_subtask_container(self):
+        if self.subtasks_container.isVisible():
+            self.menu_btn.setText('>')
+            self.subtasks_container.hide()
+        else:
+            self.menu_btn.setText('v')
+            self.subtasks_container.show()
+
+    # def task_status_updated(self, checked):
+    #     self.update_task_status_database.emit(int(checked), self.taskid)
+    #     font = self.checkbox.font()
+    #     font.setStrikeOut(checked)
+    #     self.checkbox.setFont(font)

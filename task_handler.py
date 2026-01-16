@@ -30,12 +30,12 @@ class AIEngine():
         list_msg = [
             {
                 "role": "system", 
-                "content": "You are a rigid automated planner. Output ONLY a numbered list."
+                "content": "You are a rigid automated planner. Output ONLY a numbered list. Maximum 4 words per step."
             },
 
             {
                 "role": "user", 
-                "content": f"Task: {task_name}\nRequirement: Create exactly {num_steps} steps."
+                "content": f"Task: {task_name}\nRequirement: Create exactly {num_steps} steps. Keep each step under 4 words."
             }
         ]
 
@@ -136,23 +136,37 @@ class TaskDataHandler():
 
         taskid_string = ',' .join(['?'] * len(taskid_list))
         
-        sql = f"SELECT * FROM tasks WHERE taskid IN ({taskid_string})"
-        
         user_task_list = []
         
         with self._get_conn() as conn:
             conn.row_factory = sqlite3.Row 
             cursor = conn.cursor()
-            cursor.execute(sql, taskid_list)
+            cursor.execute(f"SELECT * FROM tasks WHERE taskid IN ({taskid_string})", taskid_list)
             rows = cursor.fetchall()
             
-            for row in rows:
-                row_data = dict(row) 
-                row_data['subtasks'] = None 
-                if row_data['subdivisons'] != 0:
-                    pass
-                user_task = UserTask(**row_data)
-                user_task_list.append(user_task)
+        for row in rows:
+            row_data = dict(row) 
+            row_data['subtasks'] = None
+
+            if row_data['subdivisions'] != 0:
+                subtask_list = []
+                for taskid in taskid_list:
+                    with self._get_conn() as conn:
+                        conn.row_factory = sqlite3.Row 
+                        cursor = conn.cursor()
+                        cursor.execute(f"SELECT * FROM subtasks WHERE parent_id = ?", (taskid,))
+                        rows = cursor.fetchall()
+                        
+                    for row in rows:
+                        subtask = dict(row) 
+                        subtask_list.append(subtask)
+                row_data['subtasks'] = subtask_list
+                subtask_list = []
+
+            user_task = UserTask(**row_data)
+            user_task_list.append(user_task)
+        
+        subtask_list = []
 
         return user_task_list
     
@@ -161,10 +175,31 @@ class TaskDataHandler():
             conn.cursor().execute('UPDATE tasks SET status = ? WHERE taskid = ?', (status, taskid))
             conn.commit()
 
-    def subtask_update_status(self):
-        pass
+    def subtask_update_status(self, status, subtask_id, taskid):
+        with self._get_conn() as conn:
+            conn.cursor().execute('UPDATE subtasks SET status = ? WHERE subtask_id = ?', (status, subtask_id))
+            conn.commit()
+
+            cursor = conn.cursor()
+            cursor.execute('SELECT MIN(status) FROM subtasks WHERE parent_id = ?', (taskid,))
+            result = cursor.fetchone()
+
+            if result[0] != 0:
+                self.task_update_status(1, taskid)
+            else:
+                self.task_update_status(0, taskid)
+        
 
     def task_deletion(self, taskid):
+        tempid = taskid
         with self._get_conn() as conn:
-            conn.cursor().execute('DELETE FROM tasks WHERE taskid = ?', (taskid,))
+            cursor = conn.cursor()
+            cursor.execute('SELECT subdivisions FROM tasks WHERE taskid = ?', (tempid,))
+            result = cursor.fetchone()
+            conn.cursor().execute('DELETE FROM tasks WHERE taskid = ?', (tempid,))
             conn.commit()
+        
+        if result[0] != 0:
+            with self._get_conn() as conn:
+                conn.cursor().execute('DELETE FROM subtasks WHERE parent_id = ?', (tempid,))
+                conn.commit()

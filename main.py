@@ -96,6 +96,7 @@ def main():
             self.task_entry.task_ready_signal.connect(task_handler.task_insertion)
 
             self.home_page.request_task_status_update.connect(task_handler.task_update_status)
+            self.home_page.request_subtask_status_update.connect(task_handler.subtask_update_status)
             self.home_page.request_task_removal.connect(self.remove_and_update_tasks)
             
             self.setCentralWidget(self.pages)
@@ -140,6 +141,7 @@ def main():
         def remove_and_update_tasks(self, taskid):
             task_handler.task_deletion(taskid)
             self.update_tasks()
+
         def update_tasks(self):
             global uuid
             user_task_list = task_handler.query_user_tasks(uuid)
