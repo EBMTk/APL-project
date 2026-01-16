@@ -1,20 +1,17 @@
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QLabel, QHBoxLayout, 
-    QVBoxLayout, QFrame, QSizePolicy
+    QVBoxLayout, QScrollArea, QFrame, QSizePolicy
 )
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtSignal, QTimer
-from store_utils import store_header, HorizontalScrollArea, default_theme
-import os
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtSignal
+from store_utils import store_header, HorizontalScrollArea
 
 class FurnitureCard(QFrame):
-    def __init__(self, name, price, image_paths, parent_view, styles):
+    def __init__(self, name, price, parent_view, styles):
         super().__init__()
         self.name = name
         self.price = price
         self.parent_view = parent_view
         self.styles = styles
-        self.image_paths = image_paths
 
         self.setFixedHeight(130)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -25,30 +22,11 @@ class FurnitureCard(QFrame):
                                 border: 1.5px solid {self.styles.col_border};
                                 border-radius: 15px;
                             }}
-                            QLabel {{ border: none; background: transparent; }}
-                            """) #should prob be moved to styles later
+                            QLabel {{ border: none; }}
+                            """)
         
-        layout = QHBoxLayout(self)
-        layout.setSpacing(10)
-        layout.setContentsMargins(10, 10, 10, 10)
-
-        #added image preview
-        self.img_lbl = QLabel()
-        self.img_lbl.setFixedSize(100, 100)
-        self.img_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
-        if image_paths:
-            pixmap = QPixmap(image_paths[0])
-            scaled_pixmap = pixmap.scaled(90,90, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            self.img_lbl.setPixmap(scaled_pixmap)
-    
-        
-        layout.addWidget(self.img_lbl)
-
-        right_layout = QWidget()
-        right_layout.setStyleSheet("border: none; background: transparent;")
-        right_layout_v = QVBoxLayout(right_layout)
-        right_layout_v.setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(self)
+        layout.setSpacing(5)
 
         top_layout = QHBoxLayout()
         name_lbl = QLabel(name)
@@ -72,22 +50,31 @@ class FurnitureCard(QFrame):
             }}
             QPushButton:hover {{ background: {self.styles.col_hover};}}
         """)
-        self.btn_preview.clicked.connect(lambda: self.parent_view.place_item(self.name, self.image_paths))
+        self.btn_preview.clicked.connect(self.place_item)
 
         self.btn_buy = QPushButton("Buy")
         self.btn_buy.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_buy.setStyleSheet(self.styles.button_style())
+        self.btn_buy.setStyleSheet(f"""
+            QPushButton {{
+                background: {self.styles.col_border};
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 5px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{ opacity: 0.8; }}
+        """)
         self.btn_buy.clicked.connect(self.buy_item)
 
-        right_layout_v.addLayout(top_layout)
-        right_layout_v.addWidget(self.btn_preview)
-        right_layout_v.addWidget(self.btn_buy)
+        layout.addLayout(top_layout)
+        layout.addWidget(self.btn_preview)
+        layout.addWidget(self.btn_buy)
 
-        layout.addWidget(right_layout,1)
         self.update_ownership()
 
     def update_ownership(self):
-        count = self.parent_view.game_data.inventory_furniture.count(self.name)
+        count = self.parent_view.main_window.data['inventory_furniture'].count(self.name)
         if count > 0:
             self.btn_buy.setText(f"Buy ({count} Owned)")
         else:
@@ -97,17 +84,29 @@ class FurnitureCard(QFrame):
         success = self.parent_view.attempt_purchase(self.name, self.price)
         if success: self.update_ownership()
 
+    def place_item(self):
+        self.parent_view.place_item(self.name)
+
 class FurnitureView(QWidget):
     request_clothing_view = pyqtSignal()
     request_home_view = pyqtSignal()
     money_changed = pyqtSignal(int)
 
-    def __init__(self, game_data):
+    def __init__(self, main_window, styles):
         super().__init__()
-        self.game_data = game_data
-        self.styles = default_theme
+        self.main_window = main_window
+        self.styles = styles
 
-        self.furniture_items = self.load_item_image()
+        self.furniture_items = {
+            "Beds": [("Single Bed", 100), ("Double Bed", 250), ("King Bed", 400)],
+            "Chairs": [("Stool", 20), ("Office Chair", 80), ("Gaming Chair", 200)],
+            "Tables": [("Side Table", 45), ("Dining Table", 120), ("Glass Table", 150)],
+            "Storage": [("Wardrobe", 300), ("Bookshelf", 120), ("Locker", 50)],
+            "Decor": [("Rug", 50), ("Painting", 200), ("Vase", 30)],
+            "Kitchen": [("Stove", 500), ("Fridge", 600), ("Sink", 300)],
+            "Outdoor": [("Bench", 100), ("Fountain", 800), ("Bush", 20)],
+            "Office": [("Desk", 150), ("Lamp", 40), ("PC", 1200)],
+        }
         self.init_ui()
 
     def init_ui(self):
@@ -129,28 +128,14 @@ class FurnitureView(QWidget):
         self.header = store_header(self.styles)
         self.header.home_clicked.connect(self.request_home_view.emit)
 
-        title_row = QWidget()
-        title_row_layout = QHBoxLayout(title_row)
-        title_row_layout.setContentsMargins(0, 0, 0, 0)
-
         title = QLabel("Furniture Shop")
         title.setStyleSheet(f"color: {self.styles.col_text}; font-size: 20px; font-weight: bold; border: none;")
-        
-        self.btn_save = QPushButton('Save Changes')
-        self.btn_save.setCursor(Qt.CursorShape.PointingHandCursor)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.btn_save.setStyleSheet(self.styles.button_style())
-        self.btn_save.clicked.connect(self.save_layout)
+        self.room_label = QLabel("Room Preview Area")
+        self.room_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.room_label.setStyleSheet(f"color: {self.styles.col_scroll}; font-size: 24px; font-weight: bold; border: none;")
 
-        title_row_layout.addWidget(title)
-        title_row_layout.addStretch()
-        title_row_layout.addWidget(self.btn_save)  
-
-        self.room_area = QFrame()
-        self.room_area.setStyleSheet(f'background-color: {self.styles.col_primary}; border: 2px solid {self.styles.col_border}; border-radius:10px;')
-        self.room_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.room_layout = QVBoxLayout(self.room_area)
-        
         self.btn_go_clothing = QPushButton("Browse Clothing")
         self.btn_go_clothing.setFixedHeight(60)
         self.btn_go_clothing.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -158,9 +143,9 @@ class FurnitureView(QWidget):
         self.btn_go_clothing.clicked.connect(self.request_clothing_view.emit)
 
         left_layout.addWidget(self.header)
-        left_layout.addWidget(title_row)
+        left_layout.addWidget(title)
         left_layout.addStretch()
-        left_layout.addWidget(self.room_area, 1)
+        left_layout.addWidget(self.room_label)
         left_layout.addStretch()
         left_layout.addWidget(self.btn_go_clothing)
 
@@ -270,8 +255,6 @@ class FurnitureView(QWidget):
         main_layout.addWidget(self.preview, 1)
         main_layout.addWidget(self.bottom)
 
-        self.load_layout()
-
     def toggle_sidebar(self):
         cur = self.sidebar_scroll.width()
         target = 250 if cur == 0 else 0
@@ -300,217 +283,48 @@ class FurnitureView(QWidget):
         self.anim_bot.start()
 
     def load_category(self, category):
-        if self.sidebar_scroll.width() == 0: self.toggle_sidebar() #opens sidebar if closed
-        while self.sidebar_layout.count() > 1: #grabs items from sidebar except title and deltes them one by one to clear
+        if self.sidebar_scroll.width() == 0: self.toggle_sidebar()
+        while self.sidebar_layout.count() > 1:
             item = self.sidebar_layout.takeAt(1).widget()
             if item: item.deleteLater()
-        for item_data in self.furniture_items.get(category):
-            name = item_data[0]
-            price = item_data[1]
-            path = item_data[2]
-
-            card = FurnitureCard(name, price, path, self, self.styles) #makes card with info from item data
-            self.sidebar_layout.addWidget(card,0, Qt.AlignmentFlag.AlignHCenter) #0 is so it doesnt expand
-
+        for name, price in self.furniture_items[category]:
+            card = FurnitureCard(name, price, self, self.styles)
+            self.sidebar_layout.addWidget(card,0,Qt.AlignmentFlag.AlignHCenter)
 
     def refresh_page(self):
         """Updates UI based on data"""
-        self.header.update_money(self.game_data.money)
-        
+        self.header.update_money(self.main_window.data['money'])
+        placed = self.main_window.data.get('placed_furniture', [])
+        if not placed:
+            self.room_label.setText("No Furniture Placed")
+        else:
+            items_text = ", ".join(placed[:])
+            count = len(placed)
+            self.room_label.setText(f"Placed ({count}): {items_text}")
+            self.room_label.setStyleSheet(f"color: {self.styles.col_text}; font-size: 18px; font-weight: bold; border: none;")
 
     def attempt_purchase(self, item_name, item_price):
-        if self.game_data.money >= item_price:
-            self.game_data.money -= item_price
-            self.game_data.inventory_furniture.append(item_name)
+        if self.main_window.data['money'] >= item_price:
+            self.main_window.data['money'] -= item_price
+            self.main_window.data['inventory_furniture'].append(item_name)
             self.refresh_page() 
-            self.money_changed.emit(self.game_data.money)
+            self.money_changed.emit(self.main_window.data['money'])
             return True
         else:
-            lbl = QLabel('Insufficient Funds', self.room_area)
-            lbl.setStyleSheet(f"color: red; font-size: 24px; font-weight: bold; border: none;background: transparent;")
-            lbl.adjustSize()
-            lbl.move((self.room_area.width() - lbl.width()) // 2, (self.room_area.height() - lbl.height()) // 2)
-            lbl.show()
-            QTimer.singleShot(2000, lbl.deleteLater)
+            self.room_label.setText('not suffecient funds')
+            self.room_label.setStyleSheet(f"color: red; font-size: 24px; font-weight: bold; border: none;")
             return False
         
-    def place_item(self, item_name, image_paths):
-        placed_list = self.game_data.placed_furniture
-        owned_qty = self.game_data.inventory_furniture.count(item_name)
-        placed_qty = sum(1 for item in placed_list if item['name']==item_name)
+    def place_item(self, item_name):
+        owned_qty = self.main_window.data['inventory_furniture'].count(item_name)
+        placed_qty = self.main_window.data['placed_furniture'].count(item_name)
         
         if owned_qty == 0:
-            lbl = QLabel('Item not owned', self.room_area)
-            lbl.setStyleSheet(f"color: red; font-size: 24px; font-weight: bold; border: none;background: transparent;")
-            lbl.adjustSize()
-            lbl.move((self.room_area.width() - lbl.width()) // 2, (self.room_area.height() - lbl.height()) // 2)
-            lbl.show()
-            QTimer.singleShot(2000, lbl.deleteLater)
-            return
-        
-        if placed_qty < owned_qty:
-            new_item_data = {'name': item_name, 'angle_index': 0, 'x':0, 'y':0}
-            self.game_data.placed_furniture.append(new_item_data)
-            item_lbl = DraggableFurniture(self.room_area, image_paths, new_item_data)
-            item_lbl.setStyleSheet("border: none; background: transparent;")
-            item_lbl.show()
-
-            center_x = (self.room_area.width() - item_lbl.width()) // 2
-            center_y = (self.room_area.height() - item_lbl.height()) // 2
-            item_lbl.move(center_x, center_y)
-
-            new_item_data['x'] = center_x
-            new_item_data['y'] = center_y
-
-
+             self.room_label.setText('Item not owned')
+             self.room_label.setStyleSheet(f"color: red; font-size: 24px; font-weight: bold; border: none;")
+        elif placed_qty < owned_qty:
+            self.main_window.data['placed_furniture'].append(item_name)
             self.refresh_page() 
         else:
-            lbl = QLabel(f'All {item_name}s placed', self.room_area)
-            lbl.setStyleSheet(f"color: red; font-size: 24px; font-weight: bold; border: none; background: transparent;")
-            lbl.adjustSize()
-            lbl.move((self.room_area.width() - lbl.width()) // 2, (self.room_area.height() - lbl.height()) // 2)
-            lbl.show()
-            QTimer.singleShot(2000, lbl.deleteLater)
-    
-    def load_item_image(self):
-        '''Looks inside the assets folder for images named Category_Item Name_Price.png in other words gets our info from the image names'''
-        assets_folder = "assets"
-        data = {}
-        grouped_items = {} # so more than 1 item with same name but different rotation can be grouped
-
-        if not os.path.exists(assets_folder):
-            print("Assets folder not found.")
-            return {} #i make it return empty dict if folder not found so it doesnt crash and can loop thru
-        
-        valid_file_types = ('.png')
-        
-        for filename in os.listdir(assets_folder):
-            if filename.lower().endswith(valid_file_types):
-                #we split by _ to get category, name, price from image name
-                name_no_extension = os.path.splitext(filename)[0] #we remove .png first
-                parts = name_no_extension.split('_')
-
-                if len(parts) >= 4 and parts[-1].isdigit() and len(parts[-1])==1 and parts[-2].isdigit():
-                    category = parts[0]
-                    try: price = int(parts[-2])
-                    except ValueError: price = 0
-                    name = ' '.join(parts[1:-2])
-                elif len(parts) >= 3:
-                    category = parts[0]
-                    try: price = int(parts[-1])
-                    except ValueError: price = 0
-                    name = ' '.join(parts[1:-1])
-                else:
-                    continue
-
-                key = (category, name, price)
-                full_path = os.path.join(assets_folder, filename) #we use it in card and preview later later
-
-                if key not in grouped_items: 
-                    grouped_items[key] = []
-                grouped_items[key].append(full_path)
-
-        for (cat, name, price), paths in grouped_items.items():
-            paths.sort() #sort to have consistent order or rotations if i label them right
-            if cat not in data:
-                data[cat] = []
-            data[cat].append((name, price, paths))
-
-        return data   
-    def save_layout(self):
-        data = {
-            'placed_furniture': self.game_data.placed_furniture,
-            'inventory_furniture': self.game_data.inventory_furniture
-        }
-        #THIS IS FOR OMAR  TO SEE HOW IT SAVES
-        print(data)
-        return data
-            
-
-    def load_layout(self, data=None):
-        if data:
-            placed_data = data.get('placed_furniture', [])
-        else:
-            placed_data = self.game_data.placed_furniture
-            
-        for item_data in placed_data:
-            name = item_data['name']
-            image_paths = []
-            for category, items in self.furniture_items.items():
-                for name,price,paths in items:
-                    if name == item_data['name']:
-                        image_paths = paths
-                        break
-                if image_paths:
-                    break
-
-            if image_paths:
-                item_lbl = DraggableFurniture(self.room_area, image_paths, item_data)
-                item_lbl.show()
-                    
-    
-class DraggableFurniture(QLabel):
-    def __init__(self, parent, image_paths, item_data):
-        super().__init__(parent)
-        self.image_paths = image_paths #all the images for rotation
-        self.item_data = item_data
-        self.angle_index = self.item_data.get('angle_index', 0)
-        self.drag_start_position = None
-        self.scale_factor = 0.8
-
-        self.setCursor(Qt.CursorShape.OpenHandCursor)
-        self.setStyleSheet("border: none; background: transparent;")
-
-        self.update_image()
-
-        if 'x' in self.item_data and 'y' in self.item_data:
-            self.move(self.item_data['x'], self.item_data['y'])
-
-
-    def update_image(self):
-        if not self.image_paths: return #no images ould crash app
-        current_image_path = self.image_paths[self.angle_index]
-
-        if os.path.exists(current_image_path):
-            pix = QPixmap(current_image_path)
-            new_w = int(pix.width()*self.scale_factor)
-            new_h = int(pix.height()*self.scale_factor)
-            self.setFixedSize(new_w, new_h)
-            self.setPixmap(pix.scaled(new_w, new_h, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-            self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-    def rotate(self):
-        if len(self.image_paths) > 1:
-            self.angle_index = (self.angle_index + 1) % len(self.image_paths)
-            self.item_data['angle_index'] = self.angle_index
-            self.update_image()
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.drag_start_position = event.pos()
-            self.setCursor(Qt.CursorShape.ClosedHandCursor)
-            self.raise_()
-        elif event.button() == Qt.MouseButton.RightButton:
-            self.rotate()
-    
-    def mouseMoveEvent(self, event):
-        if event.buttons() & Qt.MouseButton.LeftButton and self.drag_start_position:
-            delta = event.pos() - self.drag_start_position
-            target_pos = self.pos() + delta
-            
-
-            parent_rect = self.parentWidget()
-            max_x = parent_rect.width() - self.width()
-            max_y = parent_rect.height() - self.height()
-
-            safex = max(0, min(target_pos.x(), max_x))
-            safey = max(0, min(target_pos.y(), max_y))
-            self.move(safex, safey)
-
-            #tosave position
-            self.item_data['x'] = safex
-            self.item_data['y'] = safey
-
-    def mouseReleaseEvent(self, event):
-        self.setCursor(Qt.CursorShape.OpenHandCursor)
-        self.drag_start_position = None
+            self.room_label.setText(f'All {item_name}s placed')
+            self.room_label.setStyleSheet(f"color: red; font-size: 24px; font-weight: bold; border: none;")
