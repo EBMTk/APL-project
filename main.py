@@ -33,7 +33,7 @@ def main():
                       
             # Create pages
             self.login_page = login_page.LoginPage()
-            self.home_page = home_page.RoomScene()
+            self.home_page = home_page.RoomScene(self.game_data)
             self.clothing_view = ClothingView(self.game_data)
             self.furniture_view = FurnitureView(self.game_data)
 
@@ -73,6 +73,7 @@ def main():
             uuid = current_uuid
         
         def switch_to_home_from_store(self):
+            self.home_page.refresh_view()
             self.pages.setCurrentIndex(1)
         
         def switch_to_clothing(self):

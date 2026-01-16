@@ -36,10 +36,13 @@ class FurnitureCard(QFrame):
         self.img_lbl = QLabel()
         self.img_lbl.setFixedSize(100, 100)
         self.img_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        first_image = image_paths[0] 
-
-        pixmap = QPixmap(first_image)
-        self.img_lbl.setPixmap(pixmap.scaled(90,90, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        
+        if image_paths:
+            pixmap = QPixmap(image_paths[0])
+            scaled_pixmap = pixmap.scaled(90,90, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            self.img_lbl.setPixmap(scaled_pixmap)
+    
+        
         layout.addWidget(self.img_lbl)
 
         right_layout = QWidget()
@@ -349,7 +352,6 @@ class FurnitureView(QWidget):
             new_item_data = {'name': item_name, 'angle_index': 0, 'x':0, 'y':0}
             self.game_data.placed_furniture.append(new_item_data)
             item_lbl = DraggableFurniture(self.room_area, image_paths, new_item_data)
-            item_lbl.setFixedSize(100,100)
             item_lbl.setStyleSheet("border: none; background: transparent;")
             item_lbl.show()
 
@@ -451,9 +453,9 @@ class DraggableFurniture(QLabel):
         self.item_data = item_data
         self.angle_index = self.item_data.get('angle_index', 0)
         self.drag_start_position = None
+        self.scale_factor = 0.8
 
         self.setCursor(Qt.CursorShape.OpenHandCursor)
-        self.setFixedSize(100,100)
         self.setStyleSheet("border: none; background: transparent;")
 
         self.update_image()
@@ -461,13 +463,17 @@ class DraggableFurniture(QLabel):
         if 'x' in self.item_data and 'y' in self.item_data:
             self.move(self.item_data['x'], self.item_data['y'])
 
+
     def update_image(self):
         if not self.image_paths: return #no images ould crash app
         current_image_path = self.image_paths[self.angle_index]
 
         if os.path.exists(current_image_path):
             pix = QPixmap(current_image_path)
-            self.setPixmap(pix.scaled(90,90, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            new_w = int(pix.width()*self.scale_factor)
+            new_h = int(pix.height()*self.scale_factor)
+            self.setFixedSize(new_w, new_h)
+            self.setPixmap(pix.scaled(new_w, new_h, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def rotate(self):
