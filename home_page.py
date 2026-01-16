@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget,
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
 import sys
+import os
 
 class RoomScene(QWidget):
 
@@ -19,8 +20,9 @@ class RoomScene(QWidget):
     request_subtask_status_update = pyqtSignal(int, int, int)
     request_task_removal = pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, game_data):
         super().__init__()
+        self.game_data = game_data
         self.setMinimumSize(1280, 720)
         self.setMaximumSize(1920, 1080)
 
@@ -46,6 +48,11 @@ class RoomScene(QWidget):
         self.camera.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.camera.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+        #The Camera View
+        self.camera = Camera(self.scene)
+        self.camera.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.camera.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)   
+        
         self.camera.bottom_btn.clicked.connect(self.toggle_bottom)
         self.camera.side_btn.clicked.connect(self.toggle_side)
 
@@ -57,6 +64,7 @@ class RoomScene(QWidget):
         self.main_layout.addWidget(self.side_panel)
 
         self.camera.req_settings.connect(self.setup_settings)
+        self.refresh_view()
 
     def setup_side_panel(self):
         '''Create Side Panel'''
@@ -193,6 +201,29 @@ class RoomScene(QWidget):
         '''Signal logout for page change'''
         self.logout_signal.emit()
 
+    def refresh_view(self):
+        self.camera.update_money(self.game_data.money)
+        self.scene.clear()
+        self.load_furniture()
+
+    def get_image_path(self, item_name):
+        assets_folder = 'assets'
+        if not os.path.exists(assets_folder): return None
+        for filename in os.listdir(assets_folder):
+           if item_name.lower() in filename.lower() and filename.endswith('.png'):
+                return os.path.join(assets_folder, filename)
+        return None
+    
+    def load_furniture(self):
+        for item in self.game_data.placed_furniture:
+            path = self.get_image_path(item['name'])
+            if path and os.path.exists(path):
+                pix_item = QGraphicsPixmapItem(QPixmap(path).scaled(90, 90, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                pix_item.setPos(item['x'], item['y'])
+                self.scene.addItem(pix_item)
+
+               
+
 class Camera(QGraphicsView):
     req_settings = pyqtSignal()
     def __init__(self, scene):
@@ -216,7 +247,7 @@ class Camera(QGraphicsView):
         self.settings_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.settings_btn.clicked.connect(self.req_settings.emit)
 
-        self.money_indicator = QLabel('$Balling Hard', self)
+        self.money_indicator = QLabel('$0', self)
         self.money_indicator.setStyleSheet('''
             color: white; 
             font-size: 12px; 
@@ -228,6 +259,13 @@ class Camera(QGraphicsView):
 
         self.update_button_positions()
         self.settings_btn.move(margin, margin)
+        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+
+    def update_money(self, amount):
+        '''Update money display'''
+        self.money_indicator.setText(f'${amount}')
+        self.money_indicator.adjustSize()
 
     def resizeEvent(self, event):
         '''Adjust button postions upon resize'''
