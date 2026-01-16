@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout, QFrame, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtSignal, QTimer
-from store_utils import store_header, HorizontalScrollArea
+from store_utils import store_header, HorizontalScrollArea, default_theme
 import os
 from PyQt6.QtGui import QPixmap
 
@@ -84,7 +84,7 @@ class FurnitureCard(QFrame):
         self.update_ownership()
 
     def update_ownership(self):
-        count = self.parent_view.main_window.data['inventory_furniture'].count(self.name)
+        count = self.parent_view.game_data.inventory_furniture.count(self.name)
         if count > 0:
             self.btn_buy.setText(f"Buy ({count} Owned)")
         else:
@@ -99,10 +99,10 @@ class FurnitureView(QWidget):
     request_home_view = pyqtSignal()
     money_changed = pyqtSignal(int)
 
-    def __init__(self, main_window, styles):
+    def __init__(self, game_data):
         super().__init__()
-        self.main_window = main_window
-        self.styles = styles
+        self.game_data = game_data
+        self.styles = default_theme
 
         self.furniture_items = self.load_item_image()
         self.init_ui()
@@ -312,15 +312,15 @@ class FurnitureView(QWidget):
 
     def refresh_page(self):
         """Updates UI based on data"""
-        self.header.update_money(self.main_window.data['money'])
+        self.header.update_money(self.game_data.money)
         
 
     def attempt_purchase(self, item_name, item_price):
-        if self.main_window.data['money'] >= item_price:
-            self.main_window.data['money'] -= item_price
-            self.main_window.data['inventory_furniture'].append(item_name)
+        if self.game_data.money >= item_price:
+            self.game_data.money -= item_price
+            self.game_data.inventory_furniture.append(item_name)
             self.refresh_page() 
-            self.money_changed.emit(self.main_window.data['money'])
+            self.money_changed.emit(self.game_data.money)
             return True
         else:
             lbl = QLabel('Insufficient Funds', self.room_area)
@@ -332,8 +332,8 @@ class FurnitureView(QWidget):
             return False
         
     def place_item(self, item_name, image_paths):
-        placed_list = self.main_window.data.get('placed_furniture') 
-        owned_qty = self.main_window.data['inventory_furniture'].count(item_name)
+        placed_list = self.game_data.placed_furniture
+        owned_qty = self.game_data.inventory_furniture.count(item_name)
         placed_qty = sum(1 for item in placed_list if item['name']==item_name)
         
         if owned_qty == 0:
@@ -347,7 +347,7 @@ class FurnitureView(QWidget):
         
         if placed_qty < owned_qty:
             new_item_data = {'name': item_name, 'angle_index': 0, 'x':0, 'y':0}
-            self.main_window.data['placed_furniture'].append(new_item_data)
+            self.game_data.placed_furniture.append(new_item_data)
             item_lbl = DraggableFurniture(self.room_area, image_paths, new_item_data)
             item_lbl.setFixedSize(100,100)
             item_lbl.setStyleSheet("border: none; background: transparent;")
@@ -416,8 +416,8 @@ class FurnitureView(QWidget):
 
         return data   
     def save_layout(self):
-        placed_data = self.main_window.data.get('placed_furniture', [])
-        owned_furniture = self.main_window.data.get('inventory_furniture') #yes its from the main shhhh avert ur gaze
+        placed_data = self.game_data.placed_furniture
+        owned_furniture = self.game_data.inventory_furniture #Not from the main anymore!
 
         #THIS IS FOR OMAR  TO SAVE THE FURNITURE LAYOUT AND INVENTORY TO THE DATABASE
         print("what to save")
@@ -427,7 +427,7 @@ class FurnitureView(QWidget):
             print(item)
 
     def load_layout(self):
-        placed_data = self.main_window.data.get('placed_furniture', [])
+        placed_data = self.game_data.placed_furniture
         for item_data in placed_data:
             name = item_data['name']
             image_paths = []

@@ -3,6 +3,16 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 
+### DATA ###
+class GameData:
+    def __init__(self):
+        self.money = 1000
+        self.inventory_clothes = []
+        self.worn_clothes = []
+        self.equipped_clothes = []
+        self.inventory_furniture = []
+        self.placed_furniture = []
+
 ### UNIVERSAL_STYLES ###
 class UniversalStyles:
     def __init__(self, primary, secondary, border, hover, text, scroll, scroll_hover):
@@ -138,3 +148,14 @@ class HorizontalScrollArea(QScrollArea):
             event.accept()
       else:
             return super().wheelEvent(event)
+      
+### THEME DEFAULT ###
+default_theme = UniversalStyles(
+    primary="#f8f8f8",
+    secondary="#ffffff",
+    border="#000000",
+    hover="#a9a9a9",
+    text="#000000",
+    scroll="#888888",
+    scroll_hover="#555555"
+)

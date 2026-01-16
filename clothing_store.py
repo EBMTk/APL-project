@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap 
-from store_utils import store_header
+from store_utils import store_header, default_theme
 
 ### CLOTHING_CARD ### 
 class ClothingCard(QFrame):
@@ -50,9 +50,9 @@ class ClothingCard(QFrame):
         layout.addLayout(btn_layout) 
 
         # Initial State Check
-        if self.name in self.parent_view.main_window.data['inventory_clothes']:
+        if self.name in self.parent_view.game_data.inventory_clothes:
             self.set_owned_state()
-        if self.name in self.parent_view.main_window.data['worn_clothes']:
+        if self.name in self.parent_view.game_data.worn_clothes:
             self.set_worn_state()
 
     def get_unworn_style(self):
@@ -89,10 +89,10 @@ class ClothingView(QWidget):
     request_home_view = pyqtSignal()
     money_changed = pyqtSignal(int)
 
-    def __init__(self, main_window, styles):
+    def __init__(self, game_data):
         super().__init__()
-        self.main_window = main_window
-        self.styles = styles
+        self.game_data = game_data
+        self.styles = default_theme
 
         # 1. Define Categories for the Graphical Slots
         self.category_map = {
@@ -187,8 +187,8 @@ class ClothingView(QWidget):
 
     def wear_item(self, item_name):
         category = self.get_category_of(item_name)
-        worn_list = self.main_window.data['worn_clothes']
-        equipped_list = self.main_window.data['equipped_clothes']
+        worn_list = self.game_data.worn_clothes
+        equipped_list = self.game_data.equipped_clothes
 
         # Remove item from the SAME category (Mutual Exclusion)
         for already_worn in list(worn_list):
@@ -204,15 +204,15 @@ class ClothingView(QWidget):
         self.refresh_page()
 
     def unwear_item(self, item_name):
-        if item_name in self.main_window.data['worn_clothes']:
-            self.main_window.data['worn_clothes'].remove(item_name)
-            if item_name in self.main_window.data['equipped_clothes']:
-                 self.main_window.data['equipped_clothes'].remove(item_name)
+        if item_name in self.game_data.worn_clothes:
+            self.game_data.worn_clothes.remove(item_name)
+            if item_name in self.game_data.equipped_clothes:
+                 self.game_data.equipped_clothes.remove(item_name)
         self.refresh_page()
 
     def refresh_page(self): 
-        self.header.update_money(self.main_window.data['money'])
-        worn = self.main_window.data.get('worn_clothes', [])
+        self.header.update_money(self.game_data.money)
+        worn = self.game_data.worn_clothes
 
         for part, label in self.slots.items():
             active_item = next((item for item in worn if self.get_category_of(item) == part), None)
@@ -228,11 +228,11 @@ class ClothingView(QWidget):
                 label.setText(f"Missing: {img_name}.png") # Debug text if file not found
 
     def attempt_purchase(self, item_name, item_price):
-        if self.main_window.data['money'] >= item_price:
-            self.main_window.data['money'] -= item_price
-            if item_name not in self.main_window.data['inventory_clothes']:
-                self.main_window.data['inventory_clothes'].append(item_name)
+        if self.game_data.money >= item_price:
+            self.game_data.money -= item_price
+            if item_name not in self.game_data.inventory_clothes:
+                self.game_data.inventory_clothes.append(item_name)
             self.refresh_page() 
-            self.money_changed.emit(self.main_window.data['money'])
+            self.money_changed.emit(self.game_data.money)
             return True
         return False
