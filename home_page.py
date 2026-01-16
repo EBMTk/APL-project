@@ -515,9 +515,9 @@ class UserDivTaskCard(QFrame):
     def subtask_status_updated(self, checked, subtask_id, checkbox):
         self.update_subtask_status_database.emit(int(checked), subtask_id, self.taskid)
         
-        font = self.center_label.font()
-        font.setStrikeOut(bool(self.full_task_status))
-        self.center_label.setFont(font)
+        # font = self.center_label.font()
+        # font.setStrikeOut(bool(self.full_task_status))
+        # self.center_label.setFont(font)
         
         font = checkbox.font()
         font.setStrikeOut(checked)

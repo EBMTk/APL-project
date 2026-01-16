@@ -150,16 +150,15 @@ class TaskDataHandler():
 
             if row_data['subdivisions'] != 0:
                 subtask_list = []
-                for taskid in taskid_list:
-                    with self._get_conn() as conn:
-                        conn.row_factory = sqlite3.Row 
-                        cursor = conn.cursor()
-                        cursor.execute(f"SELECT * FROM subtasks WHERE parent_id = ?", (taskid,))
-                        rows = cursor.fetchall()
+                with self._get_conn() as conn:
+                    conn.row_factory = sqlite3.Row 
+                    cursor = conn.cursor()
+                    cursor.execute(f"SELECT * FROM subtasks WHERE parent_id = ?", (row_data['taskid'],))
+                    rows = cursor.fetchall()
                         
-                    for row in rows:
-                        subtask = dict(row) 
-                        subtask_list.append(subtask)
+                for row in rows:
+                    subtask = dict(row) 
+                    subtask_list.append(subtask)
                 row_data['subtasks'] = subtask_list
                 subtask_list = []
 
