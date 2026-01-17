@@ -100,6 +100,7 @@ class FurnitureCard(QFrame):
 class FurnitureView(QWidget):
     request_clothing_view = pyqtSignal()
     request_home_view = pyqtSignal()
+    request_save_layout = pyqtSignal(list, list)
     money_changed = pyqtSignal(int)
 
     def __init__(self, game_data):
@@ -111,9 +112,9 @@ class FurnitureView(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(20, 20, 20, 20)
+        self.main_layout.setSpacing(15)
 
         self.preview = QFrame()
         self.preview.setStyleSheet(self.styles.frame_style())
@@ -267,10 +268,13 @@ class FurnitureView(QWidget):
 
         bottom_layout.addWidget(frame)
         
-        main_layout.addWidget(self.preview, 1)
-        main_layout.addWidget(self.bottom)
+        self.main_layout.addWidget(self.preview, 1)
+        self.main_layout.addWidget(self.bottom)
 
-        self.load_layout()
+    # def refresh_ui(self):
+    #     if self.main_layout:
+    #         QWidget().setLayout(self.main_layout)
+    #     self.init_ui()
 
     def toggle_sidebar(self):
         cur = self.sidebar_scroll.width()
@@ -312,17 +316,20 @@ class FurnitureView(QWidget):
             card = FurnitureCard(name, price, path, self, self.styles) #makes card with info from item data
             self.sidebar_layout.addWidget(card,0, Qt.AlignmentFlag.AlignHCenter) #0 is so it doesnt expand
 
+    def update_game_data(self, data):
+        self.game_data = data      
 
-    def refresh_page(self):
+    def refresh_page(self, data):
         """Updates UI based on data"""
         self.header.update_money(self.game_data.money)
+        self.update_game_data(data)
         
 
     def attempt_purchase(self, item_name, item_price):
         if self.game_data.money >= item_price:
             self.game_data.money -= item_price
             self.game_data.inventory_furniture.append(item_name)
-            self.refresh_page() 
+            self.refresh_page(self.game_data) 
             self.money_changed.emit(self.game_data.money)
             return True
         else:
@@ -366,7 +373,7 @@ class FurnitureView(QWidget):
             new_item_data['y'] = center_y
 
 
-            self.refresh_page() 
+            self.refresh_page(self.game_data) 
         else:
             lbl = QLabel(f'All {item_name}s placed', self.room_area)
             lbl.setStyleSheet(f"color: red; font-size: 24px; font-weight: bold; border: none; background: transparent;")
@@ -425,21 +432,11 @@ class FurnitureView(QWidget):
         return data  
      
     def save_layout(self):
-        data = {
-            'placed_furniture': self.game_data.placed_furniture,
-            'inventory_furniture': self.game_data.inventory_furniture
-        }
-        #THIS IS FOR OMAR  TO SEE HOW IT SAVES
-        print(data)
-        return data
-            
+        self.request_save_layout.emit(self.game_data.inventory_furniture, self.game_data.placed_furniture)    
 
     def load_layout(self, data=None):
-        if data:
-            placed_data = data.get('placed_furniture', [])
-        else:
-            placed_data = self.game_data.placed_furniture
-
+        
+        placed_data = data
         placed_data.sort(key=lambda x: x.get('z',0))
 
         for item_data in placed_data:
@@ -478,10 +475,7 @@ class FurnitureView(QWidget):
                 paths.append(os.path.join(assets_folder, filename))
         
         paths.sort()
-        return paths
-
-
-                    
+        return paths                 
     
 class DraggableFurniture(QLabel):
     def __init__(self, parent, image_paths, item_data, main_view):

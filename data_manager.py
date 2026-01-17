@@ -51,6 +51,64 @@ class DatabaseManager:
                 (status_code, uuid)
             )
             conn.commit()
+    
+    def add_user_inv_furniture(self, uuid, inv_dict):
+        with self._get_conn() as conn:
+            conn.cursor().execute('DELETE FROM inventory WHERE uuid = ?', (uuid,))
+            conn.commit()
+
+        for item, quantity in inv_dict.items():
+            with self._get_conn() as conn:
+                conn.cursor().execute(
+                    'INSERT INTO inventory (uuid, item_name, item_type, quantity) VALUES (?, ?, ?, ?)',
+                    (uuid, item, 'furn',quantity)
+                )
+                conn.commit()
+    
+    def add_user_eqp_furniture(self, uuid, placed_furniture):
+        with self._get_conn() as conn:
+            conn.cursor().execute('DELETE FROM placed_furniture WHERE uuid = ?', (uuid,))
+            conn.commit()
+
+        for item in placed_furniture:
+            with self._get_conn() as conn:
+                conn.cursor().execute(
+                    'INSERT INTO placed_furniture (uuid, name, angle_index, x, y, z) VALUES (?, ?, ?, ?, ? , ?)',
+                    (uuid, item['name'], item['angle_index'], item['x'], item['y'], item['z'])
+                    )
+                conn.commit()
+        
+        return
+
+    def query_user_inv_furniture(self, uuid):
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT item_name, quantity FROM inventory WHERE uuid = ? AND item_type = ?', (uuid, 'furn'))
+            result = cursor.fetchall()
+        
+        inv_furn_list = []
+        for item in result:
+            item_name, quantity = item
+            for _ in range(quantity):
+                inv_furn_list.append(item_name)
+        
+        return inv_furn_list
+
+
+    def query_user_eqp_furniture(self, uuid):
+        with self._get_conn() as conn:
+            conn.row_factory = sqlite3.Row 
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT name, angle_index, x, y, z FROM placed_furniture WHERE uuid = (?)", (uuid,))
+            rows = cursor.fetchall()
+            
+        row_list = []
+        for row in rows:
+            row_data = dict(row)
+            row_list.append(row_data)
+        
+        return row_list
+
 
 class UserManager:
     def __init__(self, db_manager):
@@ -73,6 +131,17 @@ class UserManager:
             return False, 'Username is already taken!'
 
         if self.db.insert_user(username, password):
+            self.current_uuid = self.db.get_uuid(username)
+            default_space = [   {'name': 'Floor Blank', 'angle_index': 0, 'x': 555, 'y': 172, 'z': 0}, 
+                                {'name': 'Wall1', 'angle_index': 0, 'x': 640, 'y': 64, 'z': 0},
+                                {'name': 'Wall1', 'angle_index': 1, 'x': 558, 'y': 67, 'z': 0}, 
+                                {'name': 'Floor Blank', 'angle_index': 0, 'x': 475, 'y': 229, 'z': 10},
+                                {'name': 'Wall2', 'angle_index': 0, 'x': 717, 'y': 118, 'z': 4}, 
+                                {'name': 'Floor Blank', 'angle_index': 3, 'x': 633, 'y': 228, 'z': 8}, 
+                                {'name': 'Floor Blank', 'angle_index': 1, 'x': 554, 'y': 286, 'z': 11}, 
+                                {'name': 'Wall1', 'angle_index': 1, 'x': 477, 'y': 123, 'z': 12},
+                            ]
+            self.db.add_user_eqp_furniture(self.current_uuid, default_space)
             return True, 'Account created successfully!'
         else:
             return False, 'Database error during insertion.'
@@ -99,3 +168,42 @@ class UserManager:
         '''Update user logged status'''
         if user_uuid:
             self.db.update_status(user_uuid, 0)
+    
+    def save_user_furniture_data(self, uuid, inventory_furniture, placed_furniture):
+        inv_set = set(inventory_furniture)
+        inv_dict = {}
+
+        for item in inv_set:
+            inv_dict[item] = inventory_furniture.count(item)
+
+        self.db.add_user_inv_furniture(uuid, inv_dict)
+        self.db.add_user_eqp_furniture(uuid, placed_furniture)
+
+    def retrieve_user_furniture_data(self, uuid):
+        inv_furn_list = self.db.query_user_inv_furniture(uuid)
+        place_items_list = self.db.query_user_eqp_furniture(uuid)
+
+        return inv_furn_list, place_items_list
+        
+
+
+
+# Inventory Sent: {'Jeans': True, 'T-Shirt': True}
+# Equipped Sent: {'Head': None, 'Torso': None, 'Legs': 'Jeans', 'Feet': None}
+# class GameData:
+#     def __init__(self):
+#         self.money = 100000
+#         self.inventory_clothes = []
+#         self.worn_clothes = []
+#         self.equipped_clothes = []
+#         self.inventory_furniture = []
+#         self.placed_furniture = [
+#                                 {'name': 'Floor Blank', 'angle_index': 0, 'x': 555, 'y': 172, 'z': 0}, 
+#                                 {'name': 'Wall1', 'angle_index': 0, 'x': 640, 'y': 64, 'z': 0},
+#                                 {'name': 'Wall1', 'angle_index': 1, 'x': 558, 'y': 67, 'z': 0}, 
+#                                 {'name': 'Floor Blank', 'angle_index': 0, 'x': 475, 'y': 229, 'z': 10},
+#                                 {'name': 'Wall2', 'angle_index': 0, 'x': 717, 'y': 118, 'z': 4}, 
+#                                 {'name': 'Floor Blank', 'angle_index': 3, 'x': 633, 'y': 228, 'z': 8}, 
+#                                 {'name': 'Floor Blank', 'angle_index': 1, 'x': 554, 'y': 286, 'z': 11}, 
+#                                 {'name': 'Wall1', 'angle_index': 1, 'x': 477, 'y': 123, 'z': 12}
+#                             ]

@@ -54,7 +54,10 @@ class RoomScene(QWidget):
         self.main_layout.addWidget(self.side_panel)
 
         self.camera.req_settings.connect(self.setup_settings)
-        self.refresh_view()
+        self.refresh_view(self.game_data)
+
+    def update_game_data(self, data):
+        self.game_data = data
 
     def setup_side_panel(self):
         '''Create Side Panel'''
@@ -197,8 +200,9 @@ class RoomScene(QWidget):
         '''Signal logout for page change'''
         self.logout_signal.emit()
 
-    def refresh_view(self):
+    def refresh_view(self, data):
         self.camera.update_money(self.game_data.money)
+        self.update_game_data(data)
         self.scene.clear()
         self.load_furniture()
 

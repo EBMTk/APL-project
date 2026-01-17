@@ -108,6 +108,10 @@ class ClothingView(QWidget):
         self.cards = {} 
         self.init_ui()
 
+    def update_clothes_data(self, game_data):
+        self.clothes_data = game_data
+        self.original_outfit = dict(self.clothes_data.equipped_clothes) if hasattr(self.clothes_data, 'equipped_clothes') else {}
+
     def finalize_checkout(self):
         #OMARRRRRR 
         inv = self.clothes_data.inventory_clothes

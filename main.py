@@ -9,7 +9,7 @@ from PyQt6.QtGui import QPixmap
 import sys
 
 # Import your modules
-from home_page import RoomScene, UserTaskCard
+from home_page import RoomScene
 from login_page import LoginPage
 from data_manager import *
 from store_utils import GameData
@@ -78,23 +78,48 @@ def main():
             self.home_page.request_task_status_update.connect(task_handler.task_update_status)
             self.home_page.request_subtask_status_update.connect(self.update_divtask)
             self.home_page.request_task_removal.connect(self.remove_and_update_tasks)
+
+            self.furniture_view.request_save_layout.connect(self.save_furniture_data)
             
             self.setCentralWidget(self.pages)
             
             # Initial money display
+            
+        
+        def init_game_data(self, current_uuid):
+            inv_furn_list, eqp_furn_list = user_man.retrieve_user_furniture_data(current_uuid)
+            self.game_data.inventory_furniture = inv_furn_list
+            self.game_data.placed_furniture = eqp_furn_list
+            # self.game_money = query for mula
+            self.furniture_view.load_layout(eqp_furn_list)
             self.sync_money()
+            # self.clothing_view.update_clothes_data(data)
+            pass
+
+        def init_visuals(self):
+            pass
+
+        def save_furniture_data(self, inventory_furniture, placed_furniture):
+            global uuid
+            user_man.save_user_furniture_data(uuid, inventory_furniture, placed_furniture)
+
+        def update_game_data(self, data):
+            global uuid
+            # enter data back into database
         
         def login(self, current_uuid):
             global uuid
             uuid = current_uuid
             self.update_tasks()
             self.setWindowTitle('Tikkit')
+            self.init_game_data(current_uuid)
+            self.home_page.refresh_view(self.game_data)
             self.pages.setCurrentIndex(1)
         
         def switch_to_home(self):
             self.update_tasks()
             self.setWindowTitle('Tikkit')
-            self.home_page.refresh_view()
+            self.home_page.refresh_view(self.game_data)
             self.pages.setCurrentIndex(1)
         
         def switch_to_clothing(self):
@@ -104,7 +129,7 @@ def main():
         
         def switch_to_furniture(self):
             self.setWindowTitle('Tikkit - Furniture Store')
-            self.furniture_view.refresh_page()
+            self.furniture_view.refresh_page(self.game_data)
             self.pages.setCurrentIndex(2)
         
         def switch_to_task_entry(self):
@@ -116,7 +141,7 @@ def main():
         def sync_money(self):
             """Makes money same throughout views"""
             self.clothing_view.refresh_page() 
-            self.furniture_view.refresh_page()
+            self.furniture_view.refresh_page(self.game_data)
             # we need to do for the home page too
 
         def remove_and_update_tasks(self, taskid):
@@ -137,6 +162,7 @@ def main():
             self.setWindowTitle('Tikkit - Login')
             global uuid
             user_man.logout(uuid)
+            self.home_page.refresh_view(GameData())
             self.pages.setCurrentIndex(0)
             uuid = None
         
@@ -144,6 +170,7 @@ def main():
             global uuid
             if uuid:
                 user_man.logout(uuid)
+                self.home_page.refresh_view(GameData())
             return super().closeEvent(event)
     
     app = QApplication(sys.argv)
