@@ -94,16 +94,17 @@ class ClothingView(QWidget):
         self.original_outfit = dict(self.clothes_data.equipped_clothes) if hasattr(self.clothes_data, 'equipped_clothes') else {}
 
         self.category_map = {
-            "Head": ["Hat", "Sunglasses", "Kanye", "Silly", "Crazy"],
-            "Torso": ["T-Shirt", "sweater"],
-            "Legs": ["Jeans", "skirt"],
+            "Head": ["Hat", "Sunglasses", "Kanye", "Silly", "Crazy", "Bird", "Sword", "Divine_General"],
+            "Torso": ["T-Shirt", "Sweater"],
+            "Legs": ["Jeans", "Skirt"],
             "Feet": ["Sneakers", "Boots"]
         }
 
         self.clothing_items = [
-            ("T-Shirt", 20), ("Jeans", 40), ("sweater", 60), ("Sneakers", 50),
-            ("Hat", 15), ("Sunglasses", 25), ("skirt", 70), ("Boots", 80),
-            ("Kanye", 300), ("Silly", 5), ("Crazy", 70)
+            ("T-Shirt", 20), ("Jeans", 40), ("Sweater", 60), ("Sneakers", 50),
+            ("Hat", 15), ("Sunglasses", 25), ("Skirt", 70), ("Boots", 80),
+            ("Kanye", 300), ("Silly", 5), ("Crazy", 70),
+            ("Bird", 120), ("Sword", 230), ("Divine_General", 300)
         ]
         
         self.cards = {} 
@@ -119,6 +120,8 @@ class ClothingView(QWidget):
         self.refresh_page()
 
     def finalize_checkout(self):
+        # OMARRRRRR 
+        # inventory_list is now the source of truth for owned items
         inventory_list = self.clothes_data.inventory_clothes
         current_worn = self.clothes_data.worn_clothes
         final_equipped = {}
@@ -143,6 +146,7 @@ class ClothingView(QWidget):
             if item_name not in self.clothes_data.inventory_clothes:
                 self.clothes_data.inventory_clothes.append(item_name)
             
+            # DYNAMIC SNAPSHOT UPDATE
             cat = self.get_category_of(item_name)
             if cat:
                 self.original_outfit[cat] = item_name
@@ -223,6 +227,7 @@ class ClothingView(QWidget):
 
     def wear_item(self, item_name):
         cat = self.get_category_of(item_name)
+        # Update snapshot if owned
         if item_name in self.clothes_data.inventory_clothes:
             self.original_outfit[cat] = item_name
 
