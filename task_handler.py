@@ -88,7 +88,7 @@ class AIEngine():
 ai_engine = AIEngine()
 
 class TaskDataHandler():
-    def __init__(self, db_path='app_data'):
+    def __init__(self, db_path='appdata/app_data'):
         self.db_path = db_path
 
     def _get_conn(self):

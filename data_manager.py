@@ -1,7 +1,7 @@
 import sqlite3
 
 class DatabaseManager:
-    def __init__(self, db_path='app_data'):
+    def __init__(self, db_path='appdata/app_data'):
         self.db_path = db_path
 
     def _get_conn(self):
