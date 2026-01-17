@@ -529,6 +529,9 @@ class UserDivTaskCard(QFrame):
 
         self.center_label = QLabel(f'{user_task.name}')
         self.center_label.setStyleSheet('spacing: 8px; font-size: 14px; color: white; background: transparent; border: none;')
+        font = self.center_label.font()
+        font.setStrikeOut(bool(user_task.status))
+        self.center_label.setFont(font)
 
         self.center_container_layout.addWidget(self.menu_btn)
         self.center_container_layout.addWidget(self.center_label)
