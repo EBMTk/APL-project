@@ -6,7 +6,6 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap 
 from store_utils import store_header, default_theme
 
-### CLOTHING_CARD ### 
 class ClothingCard(QFrame):
     def __init__(self, name, price, parent_view, styles):
         super().__init__()
@@ -78,23 +77,23 @@ class ClothingCard(QFrame):
         else:
             self.parent_view.wear_item(self.name)
 
-### CLOTHING_VIEW ###
 class ClothingView(QWidget):
     request_furniture_view = pyqtSignal()
     request_home_view = pyqtSignal()
     checkout_completed = pyqtSignal(dict, dict)
     money_changed = pyqtSignal(int)
 
+    #omarrrrrrrrrrr
     def __init__(self, clothes_data, styles=default_theme): 
         super().__init__()
         self.clothes_data = clothes_data
         self.styles = styles
         
-        # Save snapshot of what was worn upon entry
+        # Save snapshot of what was worn upon load
         self.original_outfit = dict(self.clothes_data.equipped_clothes) if hasattr(self.clothes_data, 'equipped_clothes') else {}
 
         self.category_map = {
-            "Head": ["Hat", "Sunglasses"],
+            "Head": ["Hat", "Sunglasses", "Kanye", "Silly", "Crazy"],
             "Torso": ["T-Shirt", "sweater"],
             "Legs": ["Jeans", "skirt"],
             "Feet": ["Sneakers", "Boots"]
@@ -103,12 +102,12 @@ class ClothingView(QWidget):
         self.clothing_items = [
             ("T-Shirt", 20), ("Jeans", 40), ("sweater", 60), ("Sneakers", 50),
             ("Hat", 15), ("Sunglasses", 25), ("skirt", 70), ("Boots", 80),
+            ("Kanye", 300), ("Silly", 5), ("Crazy", 70)
         ]
         
         self.cards = {} 
         self.init_ui()
 
-    
     def finalize_checkout(self):
         #OMARRRRRR 
         inv = self.clothes_data.inventory_clothes
