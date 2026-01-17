@@ -6,13 +6,21 @@ from PyQt6.QtCore import Qt, pyqtSignal
 ### DATA ###
 class GameData:
     def __init__(self):
-        self.money = 1000
+        self.money = 100000
         self.inventory_clothes = []
         self.worn_clothes = []
         self.equipped_clothes = []
-        self.inventory_furniture = []
-        self.placed_furniture = []
-
+        self.inventory_furniture = ['Floor Blank', 'Floor Blank', 'Floor Blank', 'Floor Blank', 'Wall1', 'Wall2', 'Wall1', 'Wall1']
+        self.placed_furniture = [
+                                {'name': 'Floor Blank', 'angle_index': 0, 'x': 555, 'y': 172, 'z': 0}, 
+                                {'name': 'Wall1', 'angle_index': 0, 'x': 640, 'y': 64, 'z': 0},
+                                {'name': 'Wall1', 'angle_index': 1, 'x': 558, 'y': 67, 'z': 0}, 
+                                {'name': 'Floor Blank', 'angle_index': 0, 'x': 475, 'y': 229, 'z': 10},
+                                {'name': 'Wall2', 'angle_index': 0, 'x': 717, 'y': 118, 'z': 4}, 
+                                {'name': 'Floor Blank', 'angle_index': 3, 'x': 633, 'y': 228, 'z': 8}, 
+                                {'name': 'Floor Blank', 'angle_index': 1, 'x': 554, 'y': 286, 'z': 11}, 
+                                {'name': 'Wall1', 'angle_index': 1, 'x': 477, 'y': 123, 'z': 12}
+                            ]
 ### UNIVERSAL_STYLES ###
 class UniversalStyles:
     def __init__(self, primary, secondary, border, hover, text, scroll, scroll_hover):

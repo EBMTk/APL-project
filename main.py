@@ -30,7 +30,6 @@ def main():
             
             self.setWindowTitle('Tikkit - Login')
             self.setMinimumSize(1280, 720)
-            self.setMaximumSize(1920, 1080)
 
             self.game_data = GameData()
                       

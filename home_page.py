@@ -24,7 +24,7 @@ class RoomScene(QWidget):
         super().__init__()
         self.game_data = game_data
         self.setMinimumSize(1280, 720)
-        self.setMaximumSize(1920, 1080)
+        #self.setMaximumSize(1920, 1080)
 
         self.main_layout = QHBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
@@ -36,7 +36,7 @@ class RoomScene(QWidget):
 
         # No longer Fake Hopefully
         self.scene = QGraphicsScene()
-        self.scene.setSceneRect(0, 0, 600, 600)
+        self.scene.setSceneRect(20, -100, 1080, 520)
 
         #The Camera View
         self.camera = Camera(self.scene)
@@ -198,18 +198,41 @@ class RoomScene(QWidget):
 
     def get_image_path(self, item_name):
         assets_folder = 'assets'
-        if not os.path.exists(assets_folder): return None
+        paths = []
+        if not os.path.exists(assets_folder): return []
+        
         for filename in os.listdir(assets_folder):
            if item_name.lower() in filename.lower() and filename.endswith('.png'):
-                return os.path.join(assets_folder, filename)
-        return None
+                paths.append(os.path.join(assets_folder, filename))
+        paths.sort()
+        return paths
     
     def load_furniture(self):
+        scale_factor = 0.8
+
         for item in self.game_data.placed_furniture:
-            path = self.get_image_path(item['name'])
+            paths = self.get_image_path(item['name'])
+            if not paths: continue
+
+            angle_idx = item.get('angle_index', 0)
+            if angle_idx >= len(paths): angle_idx = 0
+            path = paths[angle_idx]
+            
             if path and os.path.exists(path):
-                pix_item = QGraphicsPixmapItem(QPixmap(path).scaled(90, 90, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                
+                pix = QPixmap(path)
+
+                new_w = int(pix.width() * scale_factor)
+                new_h = int(pix.height() * scale_factor)
+                scaled_pix = pix.scaled(
+                    new_w, new_h, 
+                    Qt.AspectRatioMode.KeepAspectRatio, 
+                    Qt.TransformationMode.SmoothTransformation
+                )
+
+                pix_item = QGraphicsPixmapItem(scaled_pix)
                 pix_item.setPos(item['x'], item['y'])
+                pix_item.setZValue(item.get('z', 0))
                 self.scene.addItem(pix_item)
 
                

@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QLabel, QHBoxLayout, 
-    QVBoxLayout, QFrame, QSizePolicy
+    QVBoxLayout, QFrame, QSizePolicy,
 )
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtSignal, QTimer
 from store_utils import store_header, HorizontalScrollArea, default_theme
@@ -349,14 +349,17 @@ class FurnitureView(QWidget):
             return
         
         if placed_qty < owned_qty:
-            new_item_data = {'name': item_name, 'angle_index': 0, 'x':0, 'y':0}
+            if self.game_data.placed_furniture:
+                current_max_z = max((item.get('z', 0) for item in self.game_data.placed_furniture), default=0)
+            new_item_data = {'name': item_name, 'angle_index': 0, 'x':0, 'y':0 , 'z':current_max_z + 1}
             self.game_data.placed_furniture.append(new_item_data)
-            item_lbl = DraggableFurniture(self.room_area, image_paths, new_item_data)
+            item_lbl = DraggableFurniture(self.room_area, image_paths, new_item_data, self)
             item_lbl.setStyleSheet("border: none; background: transparent;")
             item_lbl.show()
+            self.refresh_z_order()
 
-            center_x = (self.room_area.width() - item_lbl.width()) // 2
-            center_y = (self.room_area.height() - item_lbl.height()) // 2
+            center_x = ((self.room_area.width() - item_lbl.width()) // 2 ) + 100
+            center_y = ((self.room_area.height() - item_lbl.height()) // 2) + 100
             item_lbl.move(center_x, center_y)
 
             new_item_data['x'] = center_x
@@ -403,6 +406,9 @@ class FurnitureView(QWidget):
                 else:
                     continue
 
+                if 'Floor' in name or 'Wall' in name:
+                    continue
+
                 key = (category, name, price)
                 full_path = os.path.join(assets_folder, filename) #we use it in card and preview later later
 
@@ -416,7 +422,8 @@ class FurnitureView(QWidget):
                 data[cat] = []
             data[cat].append((name, price, paths))
 
-        return data   
+        return data  
+     
     def save_layout(self):
         data = {
             'placed_furniture': self.game_data.placed_furniture,
@@ -432,7 +439,9 @@ class FurnitureView(QWidget):
             placed_data = data.get('placed_furniture', [])
         else:
             placed_data = self.game_data.placed_furniture
-            
+
+        placed_data.sort(key=lambda x: x.get('z',0))
+
         for item_data in placed_data:
             name = item_data['name']
             image_paths = []
@@ -443,22 +452,56 @@ class FurnitureView(QWidget):
                         break
                 if image_paths:
                     break
+            if not image_paths:
+                image_paths = self.get_specific_item_images(item_data['name'])
 
             if image_paths:
-                item_lbl = DraggableFurniture(self.room_area, image_paths, item_data)
+                item_lbl = DraggableFurniture(self.room_area, image_paths, item_data, self)
                 item_lbl.show()
+    
+    def refresh_z_order(self):
+        """restacks stuff based on the z index"""
+        widgets = self.room_area.findChildren(DraggableFurniture)
+        sorted_widgets = sorted(widgets, key=lambda w: w.item_data.get('z',0))
+        for w in sorted_widgets:
+            w.raise_()
+
+    def get_specific_item_images(self, item_name):
+        ''' Ik the names crazy, it finds images that are hidden from the store like the floors and walls so it can have the base'''
+        assets_folder = 'assets'
+        paths = []
+
+        if not os.path.exists(assets_folder): return []
+
+        for filename in os.listdir(assets_folder):
+            if item_name in filename and filename.endswith('.png'):
+                paths.append(os.path.join(assets_folder, filename))
+        
+        paths.sort()
+        return paths
+
+
                     
     
 class DraggableFurniture(QLabel):
-    def __init__(self, parent, image_paths, item_data):
+    def __init__(self, parent, image_paths, item_data, main_view):
         super().__init__(parent)
         self.image_paths = image_paths #all the images for rotation
         self.item_data = item_data
         self.angle_index = self.item_data.get('angle_index', 0)
         self.drag_start_position = None
+        self.parent_view = main_view
         self.scale_factor = 0.8
 
-        self.setCursor(Qt.CursorShape.OpenHandCursor)
+        self.is_locked = "Floor" in self.item_data['name'] or "Wall" in self.item_data['name']
+        if 'z' not in self.item_data:self.item_data['z'] = 0
+
+        if not self.is_locked:
+            self.setCursor(Qt.CursorShape.OpenHandCursor)
+        else:
+            self.setCursor(Qt.CursorShape.ArrowCursor)
+
+
         self.setStyleSheet("border: none; background: transparent;")
 
         self.update_image()
@@ -486,14 +529,17 @@ class DraggableFurniture(QLabel):
             self.update_image()
 
     def mousePressEvent(self, event):
+        if self.is_locked: return
+        self.setFocus()
         if event.button() == Qt.MouseButton.LeftButton:
             self.drag_start_position = event.pos()
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
-            self.raise_()
+            
         elif event.button() == Qt.MouseButton.RightButton:
             self.rotate()
     
     def mouseMoveEvent(self, event):
+        if self.is_locked: return
         if event.buttons() & Qt.MouseButton.LeftButton and self.drag_start_position:
             delta = event.pos() - self.drag_start_position
             target_pos = self.pos() + delta
@@ -512,5 +558,29 @@ class DraggableFurniture(QLabel):
             self.item_data['y'] = safey
 
     def mouseReleaseEvent(self, event):
+        if self.is_locked: return
         self.setCursor(Qt.CursorShape.OpenHandCursor)
         self.drag_start_position = None
+
+    def mouseDoubleClickEvent(self, event):
+        if self.is_locked: return
+        if event.button() == Qt.MouseButton.LeftButton:
+            siblings = self.parentWidget().findChildren(DraggableFurniture)
+            current_max_z = 0
+            for sib in siblings:
+                z= sib.item_data.get('z',0)
+                if z > current_max_z:
+                    current_max_z = z
+            
+            self.item_data['z']= current_max_z + 1
+            self.raise_()
+
+    def delete_item(self):
+        if self.item_data in self.parent_view.game_data.placed_furniture:
+            self.parent_view.game_data.placed_furniture.remove(self.item_data)
+            self.deleteLater()
+
+    def keyPressEvent(self, event):
+        if self.is_locked:return
+        if event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
+            self.delete_item()
