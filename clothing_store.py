@@ -87,7 +87,7 @@ class ClothingView(QWidget):
 
     def __init__(self, clothes_data, styles=default_theme): 
         super().__init__()
-        self.clothes_data = clothes_data
+        self.clothes_data = clothes_data #omar
         self.styles = styles
         
         # Save snapshot of what was worn upon entry

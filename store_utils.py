@@ -10,7 +10,7 @@ class GameData:
         self.inventory_clothes = []
         self.worn_clothes = []
         self.equipped_clothes = []
-        self.inventory_furniture = ['Floor Blank', 'Floor Blank', 'Floor Blank', 'Floor Blank', 'Wall1', 'Wall2', 'Wall1', 'Wall1']
+        self.inventory_furniture = []
         self.placed_furniture = [
                                 {'name': 'Floor Blank', 'angle_index': 0, 'x': 555, 'y': 172, 'z': 0}, 
                                 {'name': 'Wall1', 'angle_index': 0, 'x': 640, 'y': 64, 'z': 0},
