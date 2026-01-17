@@ -98,14 +98,10 @@ def main():
             inv_clothes_list, eqp_clothes_dict = user_man.retrieve_user_clothe_data(current_uuid)
             self.game_data.inventory_clothes = inv_clothes_list
             self.game_data.equipped_clothes = eqp_clothes_dict
-            print(eqp_clothes_dict)
             self.clothing_view.update_clothes_data(self.game_data)
             self.clothing_view.refresh_page()
 
             self.sync_views()
-            pass
-
-        def init_visuals(self):
             pass
 
         def save_furniture_data(self, inventory_furniture, placed_furniture):
@@ -115,10 +111,6 @@ def main():
         def save_clothe_data(self, inventory_clothes, equipped_clothes):
             global uuid
             user_man.save_user_clothe_data(uuid, inventory_clothes, equipped_clothes)
-
-        def update_game_data(self, data):
-            global uuid
-            # enter data back into database
         
         def login(self, current_uuid):
             global uuid
@@ -191,6 +183,7 @@ def main():
             global uuid
             user_man.logout(uuid)
             user_man.save_user_money(uuid, self.game_data.money)
+            self.furniture_view.clear_room_area()
             self.home_page.refresh_view(GameData())
             self.pages.setCurrentIndex(0)
             uuid = None
@@ -200,6 +193,7 @@ def main():
             if uuid:
                 user_man.logout(uuid)
                 user_man.save_user_money(uuid, self.game_data.money)
+                self.furniture_view.clear_room_area()
                 self.home_page.refresh_view(GameData())
             return super().closeEvent(event)
     
