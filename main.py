@@ -12,7 +12,7 @@ import sys
 from home_page import RoomScene
 from login_page import LoginPage
 from data_manager import *
-from store_utils import GameData
+from store_utils import GameData, default_theme
 from clothing_store import ClothingView
 from furniture_store import FurnitureView
 from task_page import TaskEntryWidget
@@ -29,7 +29,7 @@ def main():
             super().__init__()
             
             self.setWindowTitle('Tikkit - Login')
-            self.setMinimumSize(1280, 720)
+            self.setFixedSize(300, 310)            
 
             self.game_data = GameData()
                       
@@ -38,7 +38,7 @@ def main():
             self.home_page = RoomScene(self.game_data)
             self.clothing_view = ClothingView(self.game_data)
             self.furniture_view = FurnitureView(self.game_data)
-            self.task_entry = TaskEntryWidget()
+            self.task_entry = TaskEntryWidget(default_theme)
             
             # stack with all pages
             self.pages = QStackedWidget()
@@ -119,6 +119,7 @@ def main():
             self.setWindowTitle('Tikkit')
             self.init_game_data(current_uuid)
             self.sync_views()
+            self.setMinimumSize(1280, 720)
             self.pages.setCurrentIndex(1)
         
         def switch_to_home(self):
@@ -185,6 +186,8 @@ def main():
             user_man.save_user_money(uuid, self.game_data.money)
             self.furniture_view.clear_room_area()
             self.home_page.refresh_view(GameData())
+            self.setMinimumSize(350, 310) 
+            self.resize(350, 310)
             self.pages.setCurrentIndex(0)
             uuid = None
         
