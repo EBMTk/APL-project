@@ -6,21 +6,13 @@ from PyQt6.QtCore import Qt, pyqtSignal
 ### DATA ###
 class GameData:
     def __init__(self):
-        self.money = 100000
+        self.money = 300
         self.inventory_clothes = []
         self.worn_clothes = []
-        self.equipped_clothes = []
+        self.equipped_clothes = {}
         self.inventory_furniture = []
-        self.placed_furniture = [
-                                {'name': 'Floor Blank', 'angle_index': 0, 'x': 555, 'y': 172, 'z': 0}, 
-                                {'name': 'Wall1', 'angle_index': 0, 'x': 640, 'y': 64, 'z': 0},
-                                {'name': 'Wall1', 'angle_index': 1, 'x': 558, 'y': 67, 'z': 0}, 
-                                {'name': 'Floor Blank', 'angle_index': 0, 'x': 475, 'y': 229, 'z': 10},
-                                {'name': 'Wall2', 'angle_index': 0, 'x': 717, 'y': 118, 'z': 4}, 
-                                {'name': 'Floor Blank', 'angle_index': 3, 'x': 633, 'y': 228, 'z': 8}, 
-                                {'name': 'Floor Blank', 'angle_index': 1, 'x': 554, 'y': 286, 'z': 11}, 
-                                {'name': 'Wall1', 'angle_index': 1, 'x': 477, 'y': 123, 'z': 12}
-                            ]
+        self.placed_furniture = []
+
 ### UNIVERSAL_STYLES ###
 class UniversalStyles:
     def __init__(self, primary, secondary, border, hover, text, scroll, scroll_hover):
@@ -107,6 +99,137 @@ class UniversalStyles:
             }}
             QPushButton:hover {{ background: {self.col_hover};}}
         """
+    def task_style(self):
+        return f'''
+            #Card {{
+                background-color: {self.col_secondary}; 
+                color: {self.col_text}; 
+                border: 2px solid {self.col_border}; 
+                border-radius: 10px;
+            }}
+            QCheckBox {{
+                spacing: 8px; 
+                font-size: 14px; 
+                color: {self.col_text};
+                background: transparent;
+                border: none;
+                margin-left: 5px; 
+            }}
+            QCheckBox::indicator {{
+                width: 18px;   
+                height: 18px;
+                border: 2px solid {self.col_border}; 
+                border-radius: 4px;
+                background: {self.col_primary}; 
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: #4CAF50;
+                border: 2px solid #4CAF50; 
+            }}
+            QLabel {{
+                color: {self.col_text}; 
+                font-size: 9px; 
+                background: transparent;
+                border: none;
+                padding: 0px; margin: 0px; 
+            }}
+            QPushButton {{
+                background-color: {self.col_text};
+                color: white;
+                border: none;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{ background-color: ; }}
+        '''
+    def panel_style(self):
+        return f'''
+        QPushButton {{
+            background-color: {self.col_secondary};
+            color: {self.col_text};
+            border: 2px solid {self.col_border};
+            border-radius: 10px; /* Makes it a circle if size is 20x20 */
+            font-size: 14px;
+            font-weight: bold;
+        }}
+        QPushButton:hover {{
+            background-color: {self.col_hover};
+        }}
+        '''
+    
+    def settings_button_style(self):
+        return f''' 
+        QPushButton {{
+            background-color: {self.col_secondary};
+            color: {self.col_text};
+            border: 2px solid {self.col_border};
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }}
+        QPushButton:hover {{
+            background-color: {self.col_hover};
+        }}'''
+    
+    def bottom_button_style(self):
+        return f"""
+            QPushButton {{
+                background-color: {self.col_text};
+                border: 2px solid {self.col_text};
+                border-bottom: none; 
+                border-top-left-radius: 10px;
+                border-top-right-radius: 10px;
+                color: {self.col_primary};
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {self.col_hover};
+                border-color: {self.col_hover};
+            }}"""
+
+    def side_button_style(self):
+        return f"""
+            QPushButton {{
+                background-color: {self.col_text};
+                border: 2px solid {self.col_text};
+                border-right: none; 
+                border-top-left-radius: 10px;
+                border-bottom-left-radius: 10px;
+                color: {self.col_primary};
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: {self.col_hover};
+                border-color: {self.col_hover};
+            }}
+        """
+
+    def input_page_style(self):
+        return f"""
+            QSlider::groove:horizontal {{
+                border: 1px solid {self.col_border};
+                height: 8px;
+                background: {self.col_secondary};
+                margin: 2px 0;
+                border-radius: 4px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {self.col_text};
+                border: 1px solid {self.col_border};
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }}
+            QCheckBox::indicator {{
+                width: 20px;
+                height: 20px;
+                border: 2px solid {self.col_border};
+                border-radius: 5px;
+                background: {self.col_secondary};
+            }}
+            QCheckBox::indicator:checked {{
+                background: {self.col_text};
+            }}
+        """
 
 ### STORE_HEADER ###
 class store_header(QWidget):
@@ -156,6 +279,7 @@ class HorizontalScrollArea(QScrollArea):
             event.accept()
       else:
             return super().wheelEvent(event)
+      
       
 ### THEME DEFAULT ###
 default_theme = UniversalStyles(

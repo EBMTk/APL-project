@@ -4,9 +4,10 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget,
                              QVBoxLayout, QFrame, QHBoxLayout, 
                              QSizePolicy, QDialog, QGridLayout, 
                              QLineEdit, QCheckBox, QScrollArea,
-                             QLayout,)
+                             QLayout)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
+from store_utils import default_theme
 import sys
 import os
 
@@ -24,22 +25,22 @@ class RoomScene(QWidget):
         super().__init__()
         self.game_data = game_data
         self.setMinimumSize(1280, 720)
-        #self.setMaximumSize(1920, 1080)
+        self.styles = default_theme
 
         self.main_layout = QHBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
 
         self.center_container = QWidget()
         self.center_layout = QVBoxLayout(self.center_container)
         self.center_layout.setContentsMargins(0, 0, 0, 0)
         self.center_layout.setSpacing(0)
 
-        # No longer Fake Hopefully
         self.scene = QGraphicsScene()
         self.scene.setSceneRect(20, -100, 1080, 520)
 
-        #The Camera View
-        self.camera = Camera(self.scene)
+        # The Camera View
+        self.camera = Camera(self.scene, self.styles)
         self.camera.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.camera.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)   
         
@@ -54,60 +55,68 @@ class RoomScene(QWidget):
         self.main_layout.addWidget(self.side_panel)
 
         self.camera.req_settings.connect(self.setup_settings)
-        self.refresh_view()
+        self.refresh_view(self.game_data)
+
+    def update_game_data(self, data):
+        self.game_data = data
 
     def setup_side_panel(self):
         '''Create Side Panel'''
         self.side_panel = QFrame()
         self.side_panel.setFixedWidth(300)
-        self.side_panel.setStyleSheet('background-color: rgba(100, 100, 100, 220); border-left: 2px solid #555;')
-
+        self.side_panel.setStyleSheet(self.styles.panel_style())
+       
         layout = QVBoxLayout(self.side_panel)
-        layout.setSpacing(5)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 15, 10, 15)
+
+        lbl = QLabel('TASKS')
+        lbl.setStyleSheet(f"font-weight: 900; font-size: 18px; color: {self.styles.col_text}; border: none;")
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(lbl) 
 
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setStyleSheet("border: none; background: transparent;")
+        self.scroll_area.setStyleSheet(self.styles.scrollbar_style())
 
         self.card_container = QWidget()
         self.card_container.setStyleSheet("background: transparent;")
         
         self.card_container_layout = QVBoxLayout(self.card_container)
-        self.card_container_layout.setSpacing(5)
+        self.card_container_layout.setSpacing(10)
         self.card_container_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         task_entry_nav = QPushButton('Add Task')
         task_entry_nav.setCursor(Qt.CursorShape.PointingHandCursor)
-        task_entry_nav.setFixedSize(300, 30)
-        task_entry_nav.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
+        task_entry_nav.setFixedSize(280, 40)
+        task_entry_nav.setStyleSheet(self.styles.action_button_style())
         task_entry_nav.clicked.connect(self.request_task_entry.emit)
 
         self.scroll_area.setWidget(self.card_container)
         layout.addWidget(self.scroll_area)
 
-        layout.addWidget(task_entry_nav)        
+        layout.addWidget(task_entry_nav, 0, Qt.AlignmentFlag.AlignHCenter)        
     
     def setup_bottom_panel(self):
         '''Create Bottom Panel'''
         self.bottom_panel = QFrame()
-        self.bottom_panel.setFixedHeight(50)
-        self.bottom_panel.setStyleSheet('background-color: rgba(100, 100, 100, 220); border-left: 2px solid #555;')
+        self.bottom_panel.setFixedHeight(70)
+        self.bottom_panel.setStyleSheet(self.styles.panel_style())
 
         layout = QHBoxLayout(self.bottom_panel)
-        layout.setSpacing(5)
-        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 10, 20, 10)
 
-        btn1 = QPushButton('Open Clothing Store')
+        btn1 = QPushButton('Clothing Store')
         btn1.setCursor(Qt.CursorShape.PointingHandCursor)
         btn1.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        btn1.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
+        btn1.setStyleSheet(self.styles.button_style())
         btn1.clicked.connect(self.request_clothing_store.emit)
 
-        btn2 = QPushButton('Open Furniture Store')
+        btn2 = QPushButton('Furniture Store')
         btn2.setCursor(Qt.CursorShape.PointingHandCursor)
         btn2.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        btn2.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
+        btn2.setStyleSheet(self.styles.button_style())
         btn2.clicked.connect(self.request_furniture_store.emit)
 
         layout.addWidget(btn1)
@@ -118,16 +127,17 @@ class RoomScene(QWidget):
         settings = QDialog(self)
         settings.setWindowTitle('System Settings')
         settings.setFixedSize(300, 200)
+        settings.setStyleSheet(f"background: {self.styles.col_secondary}; border: 2px solid {self.styles.col_border};")
         
         layout = QVBoxLayout(settings)
         layout.setSpacing(5)
-        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setContentsMargins(20, 20, 20, 20)
         
-        logout_btn = QPushButton('Logout ➜]')
+        logout_btn = QPushButton('Logout ➜')
         logout_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         logout_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         logout_btn.setFixedHeight(50)
-        logout_btn.setStyleSheet('background-color: #555; color: white; border-radius: 5px;')
+        logout_btn.setStyleSheet(self.styles.action_button_style())
         logout_btn.clicked.connect(settings.accept)
 
         layout.addStretch()
@@ -168,8 +178,8 @@ class RoomScene(QWidget):
                 card = UserDivTaskCard(user_task_list[i])
                 card.update_task_status_database.connect(self.request_task_status_update.emit)
                 card.update_subtask_status_database.connect(
-                    lambda status, subtask_id, taskid: 
-                    self.request_subtask_status_update.emit(card, status, subtask_id, taskid)
+                    lambda status, subtask_id, taskid, c=card: 
+                    self.request_subtask_status_update.emit(c, status, subtask_id, taskid)
                 )
                 card.delete_request.connect(self.request_task_removal.emit)
                 card_list.append(card)
@@ -187,18 +197,25 @@ class RoomScene(QWidget):
     
     def update_button_positions(self):
         '''Adjust button postions'''
-        y = self.camera.height() - self.camera.bottom_btn.height()
-        self.camera.bottom_btn.move(0, y)
-
+        y_bot = self.camera.height() - self.camera.bottom_btn.height()
+        x_bot = (self.camera.width() - self.camera.bottom_btn.width()) // 2
+        self.camera.bottom_btn.move(x_bot, y_bot - 5) 
         x_side = self.camera.width() - self.camera.side_btn.width()
-        self.camera.side_btn.move(x_side, 0)
+        y_center = (self.camera.height() - self.camera.side_btn.height()) // 2
+        self.camera.side_btn.move(x_side, y_center)
+        margin = 10
+        self.camera.settings_btn.move(margin, margin)
+        
+        money_x = self.camera.width() - self.camera.money_indicator.width() - margin
+        self.camera.money_indicator.move(money_x, margin)
 
     def logout(self):
         '''Signal logout for page change'''
         self.logout_signal.emit()
 
-    def refresh_view(self):
+    def refresh_view(self, data):
         self.camera.update_money(self.game_data.money)
+        self.update_game_data(data)
         self.scene.clear()
         self.load_furniture()
 
@@ -241,39 +258,33 @@ class RoomScene(QWidget):
                 pix_item.setZValue(item.get('z', 0))
                 self.scene.addItem(pix_item)
 
-               
+                
 
 class Camera(QGraphicsView):
     req_settings = pyqtSignal()
-    def __init__(self, scene):
+    def __init__(self, scene, styles):
         super().__init__(scene)
-
+        self.styles = styles
         margin = 10
 
-        self.bottom_btn = QPushButton('==', self)
-        self.bottom_btn.setFixedSize(20, 10)
-        self.bottom_btn.setStyleSheet('background-color: #444; color: white; border: none;')
+        self.bottom_btn = QPushButton('─', self)
+        self.bottom_btn.setFixedSize(60, 20) 
+        self.bottom_btn.setStyleSheet(self.styles.bottom_button_style())
         self.bottom_btn.setCursor(Qt.CursorShape.PointingHandCursor)
 
-        self.side_btn = QPushButton('||', self)
-        self.side_btn.setFixedSize(10, 20)
-        self.side_btn.setStyleSheet('background-color: #444; color: white; border: none;')
+        self.side_btn = QPushButton('〡', self)
+        self.side_btn.setFixedSize(20, 60)
+        self.side_btn.setStyleSheet(self.styles.side_button_style())
         self.side_btn.setCursor(Qt.CursorShape.PointingHandCursor)
 
         self.settings_btn = QPushButton('⏣', self)
-        self.settings_btn.setFixedSize(20, 20)
-        self.settings_btn.setStyleSheet('background-color: #444; color: white; border: none;')
+        self.settings_btn.setFixedSize(30, 30)
+        self.settings_btn.setStyleSheet(self.styles.settings_button_style())
         self.settings_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.settings_btn.clicked.connect(self.req_settings.emit)
 
         self.money_indicator = QLabel('$0', self)
-        self.money_indicator.setStyleSheet('''
-            color: white; 
-            font-size: 12px; 
-            background-color: rgba(0, 0, 0, 150);
-            padding: 3px;
-            border-radius: 4px;
-        ''')
+        self.money_indicator.setStyleSheet(self.styles.money_label_style())
         self.money_indicator.move(self.settings_btn.width()+margin, margin)
 
         self.update_button_positions()
@@ -292,13 +303,15 @@ class Camera(QGraphicsView):
         self.update_button_positions()
 
     def update_button_positions(self):
-        '''Adjust button postions'''
-        y_bot = self.height() - self.bottom_btn.height()
-        self.bottom_btn.move(0, y_bot)
-
-        x_side = self.width() - self.side_btn.width()
-        self.side_btn.move(x_side, 0)
-    #this part just to make the cursor not a hand when dragging
+       margin = 10
+       y_bot = self.height() - self.bottom_btn.height()
+       self.bottom_btn.move((self.width() - self.bottom_btn.width()) // 2, y_bot)
+       x_side = self.width() - self.side_btn.width()
+       self.side_btn.move(x_side, (self.height() - self.side_btn.height()) // 2)
+       self.settings_btn.move(margin, margin)
+       money_x = self.width() - self.money_indicator.width() - margin
+       self.money_indicator.move(money_x, margin) 
+    
     def mousePressEvent(self, event):
         '''make it a pointer not hand'''
         super().mousePressEvent(event)
@@ -316,64 +329,12 @@ class UserTaskCard(QFrame):
     def __init__(self, user_task):
         super().__init__()
         self.setObjectName("Card") 
-        self.setFixedSize(280, 60)
+        self.setFixedSize(255, 65) 
+        self.styles = default_theme
         
         self.taskid = user_task.taskid
 
-        self.setStyleSheet("""
-            #Card {
-                background-color: #444; 
-                color: white; 
-                border: 1px solid #666; 
-                border-radius: 4px;
-            }
-
-            /* --- Checkbox Styling --- */
-            QCheckBox {
-                spacing: 8px; 
-                font-size: 14px; 
-                color: white;
-                background: transparent;
-                border: none;
-                margin-left: 5px; 
-            }
-            QCheckBox::indicator {
-                width: 18px;   
-                height: 18px;
-                border: 2px solid #ccc; 
-                border-radius: 4px;
-                background: #333; 
-            }
-            QCheckBox::indicator:checked {
-                background-color: #4CAF50;
-                border: 2px solid #4CAF50;
-            }
-
-            /* --- Labels (Metadata) --- */
-            QLabel {
-                color: #AAA; 
-                font-size: 9px; 
-                background: transparent;
-                border: none;
-                padding: 0px; margin: 0px; 
-            }
-
-            /* --- Action Button --- */
-            QPushButton {
-                background-color: #555;
-                color: white;
-                border: none;
-                /* Optional: Since it's now floating, you might want all corners rounded? 
-                   I kept your original right-side rounding for now. */
-                border-top-right-radius: 4px;
-                border-bottom-right-radius: 4px;
-                /* If you want it fully rounded like a pill, uncomment this:
-                border-radius: 4px; 
-                */
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #666; }
-        """)
+        self.setStyleSheet(self.styles.task_style())
 
         layout = QGridLayout(self)
         layout.setSpacing(0)
@@ -384,8 +345,8 @@ class UserTaskCard(QFrame):
         layout.setRowStretch(2, 0)
 
         self.reward_label = QLabel(f"${user_task.reward}")
-        self.reward_label.setStyleSheet("padding-right: 5px;")
-        layout.addWidget(self.reward_label, 0, 1, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+        self.reward_label.setStyleSheet("font-weight: bold;")
+        layout.addWidget(self.reward_label, 0, 2, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
 
         self.checkbox = QCheckBox(f'{user_task.name}')
         self.checkbox.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -405,15 +366,14 @@ class UserTaskCard(QFrame):
         self.date_due_label.setStyleSheet("padding-right: 5px;")
         layout.addWidget(self.date_due_label, 2, 1, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
-        self.delete_btn = QPushButton("✘")
-        self.delete_btn.setFixedWidth(25)
+        self.delete_btn = QPushButton("✕")
+        self.delete_btn.setFixedSize(25, 25)
         self.delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.delete_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        self.delete_btn.setStyleSheet('background-color: transparent; color: #ff6666; font-size: 20px; border: none;')
-        layout.addWidget(self.delete_btn, 0, 2, 3, 1)
+        self.delete_btn.setStyleSheet('background-color: transparent; color: #ff6666; font-size: 18px; border: none; font-weight: 900;')
+        layout.addWidget(self.delete_btn, 1, 2,  alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.delete_btn.clicked.connect(lambda: self.delete_request.emit(self.taskid))
-
 
         layout.setColumnStretch(0, 1) 
         layout.setColumnStretch(1, 0) 
@@ -434,65 +394,12 @@ class UserDivTaskCard(QFrame):
         super().__init__()
         self.setObjectName("Card") 
         self.setFixedWidth(280)
+        self.styles = default_theme
         
         self.taskid = user_task.taskid
-
         self.full_task_status = user_task.status
 
-        self.setStyleSheet("""
-            #Card {
-                background-color: #444; 
-                color: white; 
-                border: 1px solid #666; 
-                border-radius: 4px;
-            }
-
-            /* --- Checkbox Styling --- */
-            QCheckBox {
-                spacing: 8px; 
-                font-size: 12px; 
-                color: white;
-                background: transparent;
-                border: none;
-                margin-left: 5px; 
-            }
-            QCheckBox::indicator {
-                width: 15px;   
-                height: 15px;
-                border: 2px solid #ccc; 
-                border-radius: 4px;
-                background: #333; 
-            }
-            QCheckBox::indicator:checked {
-                background-color: #4CAF50;
-                border: 2px solid #4CAF50;
-            }
-
-            /* --- Labels (Metadata) --- */
-            QLabel {
-                color: #AAA; 
-                font-size: 9px; 
-                background: transparent;
-                border: none;
-                padding: 0px; margin: 0px; 
-            }
-
-            /* --- Action Button --- */
-            QPushButton {
-                background-color: #555;
-                color: white;
-                border: none;
-                /* Optional: Since it's now floating, you might want all corners rounded? 
-                   I kept your original right-side rounding for now. */
-                border-top-right-radius: 4px;
-                border-bottom-right-radius: 4px;
-                /* If you want it fully rounded like a pill, uncomment this:
-                border-radius: 4px; 
-                */
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #666; }
-        """)
+        self.setStyleSheet(self.styles.task_style())
 
         layout = QVBoxLayout(self)
         layout.setSpacing(0)
@@ -500,7 +407,7 @@ class UserDivTaskCard(QFrame):
         layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
 
         main_card_container = QWidget()
-        main_card_container.setFixedSize(280, 60)
+        main_card_container.setFixedSize(250, 65)
         main_card_layout = QGridLayout(main_card_container)
         main_card_layout.setSpacing(0)
         main_card_layout.setContentsMargins(5, 2, 5, 2)
@@ -510,21 +417,21 @@ class UserDivTaskCard(QFrame):
         main_card_layout.setRowStretch(2, 0)
 
         self.reward_label = QLabel(f"${user_task.reward}")
-        self.reward_label.setStyleSheet("padding-right: 5px;")
-        main_card_layout.addWidget(self.reward_label, 0, 1, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+        self.reward_label.setStyleSheet("padding-right: 5px; font-weight: bold;")
+        main_card_layout.addWidget(self.reward_label, 0, 2, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
 
         self.center_container = QWidget()
         self.center_container_layout = QHBoxLayout(self.center_container)
         self.center_container_layout.setSpacing(5)
         self.center_container_layout.setContentsMargins(5, 0, 0, 0)
         
-        self.menu_btn = QPushButton(">")
+        self.menu_btn = QPushButton("►")
         self.menu_btn.setFixedSize(18, 18)
         self.menu_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.menu_btn.clicked.connect(self.toggle_subtask_container)
 
         self.center_label = QLabel(f'{user_task.name}')
-        self.center_label.setStyleSheet('spacing: 8px; font-size: 14px; color: white; background: transparent; border: none;')
+        self.center_label.setStyleSheet('spacing: 8px; font-size: 14px; background: transparent; border: none; font-weight: bold;')
 
         self.center_container_layout.addWidget(self.menu_btn)
         self.center_container_layout.addWidget(self.center_label)
@@ -538,12 +445,12 @@ class UserDivTaskCard(QFrame):
         self.date_due_label.setStyleSheet("padding-right: 5px;")
         main_card_layout.addWidget(self.date_due_label, 2, 1, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
-        self.delete_btn = QPushButton("✘")
+        self.delete_btn = QPushButton("✕")
         self.delete_btn.setFixedWidth(25)
         self.delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.delete_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        self.delete_btn.setStyleSheet('background-color: transparent; color: #ff6666; font-size: 20px; border: none;')
-        main_card_layout.addWidget(self.delete_btn, 0, 2, 3, 1)
+        self.delete_btn.setStyleSheet('background-color: transparent; color: #ff6666; font-size: 18px; border: none; font-weight: 900;')
+        main_card_layout.addWidget(self.delete_btn, 1, 2,  alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.delete_btn.clicked.connect(lambda: self.delete_request.emit(self.taskid))
 
@@ -552,9 +459,10 @@ class UserDivTaskCard(QFrame):
         main_card_layout.setColumnStretch(2, 0)
 
         self.subtasks_container = QWidget()
+        self.subtasks_container.setStyleSheet(f"background: transparent; border: none {self.styles.col_border};")
         self.subtasks_container_layout = QVBoxLayout(self.subtasks_container)
         self.subtasks_container_layout.setSpacing(5)
-        self.subtasks_container_layout.setContentsMargins(20, 0, 5, 5)
+        self.subtasks_container_layout.setContentsMargins(20, 0, 5, 10)
         self.add_checkbox_list(user_task.subtasks)
 
         self.subtasks_container_layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
@@ -566,7 +474,7 @@ class UserDivTaskCard(QFrame):
 
     def add_checkbox_list(self, subtask_list):
         for subtask in subtask_list:
-            checkbox = QCheckBox(f'{subtask['name']}')
+            checkbox = QCheckBox(f"{subtask['name']}")
             checkbox.setCursor(Qt.CursorShape.PointingHandCursor)
             checkbox.setChecked(True if subtask['status'] == 1 else False)
             font = checkbox.font()
@@ -592,15 +500,8 @@ class UserDivTaskCard(QFrame):
 
     def toggle_subtask_container(self):
         if self.subtasks_container.isVisible():
-            self.menu_btn.setText('>')
+            self.menu_btn.setText('►')
             self.subtasks_container.hide()
         else:
-            self.menu_btn.setText('v')
+            self.menu_btn.setText('▼')
             self.subtasks_container.show()
-
-    # def task_status_updated(self, checked):
-    #     self.update_task_status_database.emit(int(checked), self.taskid)
-    #     font = self.checkbox.font()
-    #     font.setStrikeOut(checked)
-    #     self.checkbox.setFont(font)
-

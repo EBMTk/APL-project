@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap 
 from store_utils import store_header, default_theme
 
+### CLOTHING_CARD ### 
 class ClothingCard(QFrame):
     def __init__(self, name, price, parent_view, styles):
         super().__init__()
@@ -77,19 +78,19 @@ class ClothingCard(QFrame):
         else:
             self.parent_view.wear_item(self.name)
 
+### CLOTHING_VIEW ###
 class ClothingView(QWidget):
     request_furniture_view = pyqtSignal()
     request_home_view = pyqtSignal()
-    checkout_completed = pyqtSignal(dict, dict)
+    checkout_completed = pyqtSignal(list, dict) 
     money_changed = pyqtSignal(int)
 
-    #omarrrrrrrrrrr
     def __init__(self, clothes_data, styles=default_theme): 
         super().__init__()
-        self.clothes_data = clothes_data #omar
+        self.clothes_data = clothes_data
         self.styles = styles
         
-        # Save snapshot of what was worn upon load
+        # Initial snapshot
         self.original_outfit = dict(self.clothes_data.equipped_clothes) if hasattr(self.clothes_data, 'equipped_clothes') else {}
 
         self.category_map = {
@@ -108,29 +109,48 @@ class ClothingView(QWidget):
         self.cards = {} 
         self.init_ui()
 
-    def finalize_checkout(self):
-        #OMARRRRRR 
-        inv = self.clothes_data.inventory_clothes
-        inventory_dict = inv if isinstance(inv, dict) else {item: True for item in inv}
+    def update_clothes_data(self, game_data):
+        """Called upon login or data refresh"""
+        self.clothes_data = game_data
+        # puts loaded equiped into actual visuals
+        self.clothes_data.worn_clothes = [v for v in game_data.equipped_clothes.values() if v]
+        # Set the snapshot to match current DB data
+        self.original_outfit = dict(game_data.equipped_clothes)
+        self.refresh_page()
 
+    def finalize_checkout(self):
+        inventory_list = self.clothes_data.inventory_clothes
         current_worn = self.clothes_data.worn_clothes
         final_equipped = {}
 
         for category, items in self.category_map.items():
-            active = next((i for i in current_worn if i in items), None)
-            if active and active in inventory_dict:
-                final_equipped[category] = active
+            active_preview = next((i for i in current_worn if i in items), None)
+            
+            if active_preview and active_preview in inventory_list:
+                final_equipped[category] = active_preview
             else:
                 final_equipped[category] = self.original_outfit.get(category)
         
         self.clothes_data.equipped_clothes = final_equipped
         self.clothes_data.worn_clothes = [v for v in final_equipped.values() if v]
 
-        print(f"\nInventory Sent: {inventory_dict}")
-        print(f"Equipped Sent: {final_equipped}\n")
+        self.checkout_completed.emit(inventory_list, final_equipped)
 
-        # Emit the signal to Main
-        self.checkout_completed.emit(inventory_dict, final_equipped)
+    def attempt_purchase(self, item_name, item_price):
+        if self.clothes_data.money >= item_price:
+            self.clothes_data.money -= item_price
+            
+            if item_name not in self.clothes_data.inventory_clothes:
+                self.clothes_data.inventory_clothes.append(item_name)
+            
+            cat = self.get_category_of(item_name)
+            if cat:
+                self.original_outfit[cat] = item_name
+
+            self.money_changed.emit(self.clothes_data.money)
+            self.refresh_page()
+            return True
+        return False
 
     def init_ui(self):
         main_layout = QHBoxLayout(self)
@@ -203,26 +223,21 @@ class ClothingView(QWidget):
 
     def wear_item(self, item_name):
         cat = self.get_category_of(item_name)
+        if item_name in self.clothes_data.inventory_clothes:
+            self.original_outfit[cat] = item_name
+
         self.clothes_data.worn_clothes = [i for i in self.clothes_data.worn_clothes if self.get_category_of(i) != cat]
         self.clothes_data.worn_clothes.append(item_name)
         self.refresh_page()
 
     def unwear_item(self, item_name):
+        cat = self.get_category_of(item_name)
+        if item_name in self.clothes_data.inventory_clothes:
+            self.original_outfit[cat] = None
+
         if item_name in self.clothes_data.worn_clothes:
             self.clothes_data.worn_clothes.remove(item_name)
         self.refresh_page()
-
-    def attempt_purchase(self, item_name, item_price):
-        if self.clothes_data.money >= item_price:
-            self.clothes_data.money -= item_price
-            if isinstance(self.clothes_data.inventory_clothes, dict):
-                self.clothes_data.inventory_clothes[item_name] = True
-            else:
-                self.clothes_data.inventory_clothes.append(item_name)
-            self.money_changed.emit(self.clothes_data.money)
-            self.refresh_page()
-            return True
-        return False
 
     def get_category_of(self, item_name):
         for category, items in self.category_map.items():

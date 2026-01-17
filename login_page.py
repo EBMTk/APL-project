@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget,
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QPixmap
 import sys
+from store_utils import default_theme, HorizontalScrollArea
 
 from data_manager import DatabaseManager, UserManager
 
@@ -19,45 +20,56 @@ class LoginPage(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.setMinimumSize(1280, 720)
-        self.setMaximumSize(1920, 1080)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.styles = default_theme
 
-        self.main_layout = QGridLayout(self)
+        self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.center_card = QFrame()
-        self.center_card.setFixedSize(300, 250)
-        self.center_card.setStyleSheet('background-color: #333; border-radius: 8px;')
-
+        self.center_card.setStyleSheet(f'background-color: {default_theme.col_secondary}; border: 2px solid {default_theme.col_border}; border-radius: 12px;')
         self.bottom_card = QFrame()
-        self.bottom_card.setFixedSize(300, 25)
-        self.bottom_card.setStyleSheet('background-color: #333; border-radius: 8px;')
+        self.bottom_card.setStyleSheet(f'background-color: {default_theme.col_primary}; border: none; border-top: 1.5px solid {default_theme.col_border}; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;')
+        self.center_card.setFixedWidth(280)
+
 
         self.pages = QStackedWidget()
+        self.pages.setStyleSheet("background: transparent; border: none;") 
         self.login_card = QWidget()
+        self.login_card.setStyleSheet("background: transparent; border: none;") 
         self.signup_card = QWidget()
+        self.signup_card.setStyleSheet("background: transparent; border: none;") 
+
+        self.main_layout.addStretch()
+        self.main_layout.addWidget(self.center_card, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.main_layout.addStretch()
+
 
         self.pages.addWidget(self.login_card)
         self.pages.addWidget(self.signup_card)
 
-        self.input_style = '''
-            QLineEdit {
-                border: 2px solid #555;
-                border-radius: 4px;
-                padding: 5px;
-                background-color: #222;
-                color: white;
-            }
-            QLineEdit:focus {
-                border: 2px solid #4a6741;
-            }
-        '''
-        self.label_style = 'font-size: 12px; font-weight: bold; color: #FFFFFF;'
-        self.error_label_style = 'font-size: 12px; color: #FF0000;'
-        self.button_style = 'background-color: #555; color: white; border-radius: 4px;'
+        self.input_style = f'''
+        QLineEdit {{
+            border: 1.5px solid {default_theme.col_border};
+            border-radius: 6px;
+            padding: 10px;
+            min-height: 20px;
+            background-color: {default_theme.col_primary};
+            color: {default_theme.col_text};
+            font-size: 14px;
+        }}
+        QLineEdit:focus {{
+            border: 2.25px solid {default_theme.col_text};
+            background-color: {default_theme.col_secondary};
+        }}
+    '''
+        self.label_style = f'font-size: 13px; font-weight: bold; color: {default_theme.col_text}; border: none; background:transparent;'
+        self.error_label_style = 'font-size: 12px; font-weight: bold; color: #d93025; border: none; background: transparent;'
+        self.button_style = default_theme.button_style()
 
         self.center_card_layout = QVBoxLayout(self.center_card)
-        self.center_card_layout.setContentsMargins(2, 2, 2, 2)
+        self.center_card_layout.setContentsMargins(15, 15, 15, 5)
+        self.center_card_layout.setSpacing(0)
         self.center_card_layout.addWidget(self.pages)
         self.center_card_layout.addWidget(self.bottom_card)
 
@@ -74,12 +86,11 @@ class LoginPage(QWidget):
         self.setup_signup_card()
         self.switch_to_login()
 
-        self.main_layout.addWidget(self.center_card, 0, 0, Qt.AlignmentFlag.AlignCenter)
 
     def setup_login_card(self):
         self.login_card_layout = QVBoxLayout(self.login_card)
-        self.login_card_layout.setContentsMargins(2, 2, 2, 2)
-        self.login_card_layout.setSpacing(5)
+        self.login_card_layout.setContentsMargins(5,0,5,15)
+        self.login_card_layout.setSpacing(6)
 
         self.login_button_container = QWidget()
         self.login_button_container.setFixedHeight(30)
@@ -101,7 +112,20 @@ class LoginPage(QWidget):
         login_btn = QPushButton('Login')
         login_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         login_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        login_btn.setStyleSheet(self.button_style)
+        login_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: {default_theme.col_text};
+                    color: {default_theme.col_secondary};
+                    border: 2px solid {default_theme.col_text};
+                    border-radius: 8px;
+                    padding: 5px;
+                    font-weight: bold;
+                }}
+                QPushButton:hover {{
+                    background: {default_theme.col_primary};
+                    color: {default_theme.col_text};
+                }}
+            """)
         login_btn.clicked.connect(self.login)
 
         signup_btn = QPushButton('Sign Up')
@@ -117,15 +141,15 @@ class LoginPage(QWidget):
         self.login_card_layout.addWidget(self.login_user_input)
         self.login_card_layout.addWidget(pass_label)
         self.login_card_layout.addWidget(self.login_pass_input)
-        self.login_card_layout.addSpacing(5)
+        self.login_card_layout.addSpacing(6)
         self.login_card_layout.addWidget(self.login_button_container)
 
     def setup_signup_card(self):
         self.signup_card_layout = QVBoxLayout(self.signup_card)
-        self.signup_card_layout.setContentsMargins(2, 2, 2, 2)
-        self.signup_card_layout.setSpacing(5)
+        self.signup_card_layout.setContentsMargins(5,5,5,10)
         
         self.signup_button_container = QWidget()
+        self.signup_button_container.setStyleSheet("background: transparent; border: none;")  # ADD THIS
         self.signup_button_container.setFixedHeight(30)
 
         self.signup_buttons_layout = QHBoxLayout(self.signup_button_container)
@@ -151,7 +175,20 @@ class LoginPage(QWidget):
         back_btn = QPushButton('Back')
         back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         back_btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        back_btn.setStyleSheet(self.button_style)
+        back_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {default_theme.col_text};
+                color: {default_theme.col_secondary};
+                border: 2px solid {default_theme.col_text};
+                border-radius: 8px;
+                padding: 5px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background: {default_theme.col_primary};
+                color: {default_theme.col_text};
+            }}
+        """)
         back_btn.clicked.connect(self.switch_to_login)
 
         reg_btn = QPushButton('Register')
@@ -175,13 +212,13 @@ class LoginPage(QWidget):
     def switch_to_signup(self):
         self.bottom_label.setText('Glad you can join us!')
         self.bottom_label.setStyleSheet(self.label_style)
-        self.center_card.setFixedHeight(275) 
+        self.center_card.setFixedHeight(300) 
         self.pages.setCurrentIndex(1)
     
     def switch_to_login(self):
         self.bottom_label.setText('Welcome back!')
         self.bottom_label.setStyleSheet(self.label_style)
-        self.center_card.setFixedHeight(200) 
+        self.center_card.setFixedHeight(255) 
         self.pages.setCurrentIndex(0)
 
     def login(self):
