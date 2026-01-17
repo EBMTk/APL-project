@@ -191,6 +191,7 @@ def main():
             global uuid
             user_man.logout(uuid)
             user_man.save_user_money(uuid, self.game_data.money)
+            self.furniture_view.clear_room_area()
             self.home_page.refresh_view(GameData())
             self.pages.setCurrentIndex(0)
             uuid = None
@@ -200,6 +201,7 @@ def main():
             if uuid:
                 user_man.logout(uuid)
                 user_man.save_user_money(uuid, self.game_data.money)
+                self.furniture_view.clear_room_area()
                 self.home_page.refresh_view(GameData())
             return super().closeEvent(event)
     

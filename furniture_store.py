@@ -323,6 +323,10 @@ class FurnitureView(QWidget):
         """Updates UI based on data"""
         self.header.update_money(self.game_data.money)
         self.update_game_data(data)
+        for i in range(1, self.sidebar_layout.count()):
+            widget = self.sidebar_layout.itemAt(i).widget()
+            if isinstance(widget, FurnitureCard):
+                widget.update_ownership()
         
 
     def attempt_purchase(self, item_name, item_price):
@@ -475,7 +479,12 @@ class FurnitureView(QWidget):
                 paths.append(os.path.join(assets_folder, filename))
         
         paths.sort()
-        return paths                 
+        return paths
+
+    def clear_room_area(self):
+        widgets = self.room_area.findChildren(DraggableFurniture)
+        for w in widgets:
+            w.deleteLater()               
     
 class DraggableFurniture(QLabel):
     def __init__(self, parent, image_paths, item_data, main_view):
