@@ -63,7 +63,7 @@ class RoomScene(QWidget):
     def setup_side_panel(self):
         '''Create Side Panel'''
         self.side_panel = QFrame()
-        self.side_panel.setFixedWidth(300)
+        self.side_panel.setFixedWidth(350)
         self.side_panel.setStyleSheet(self.styles.panel_style())
        
         layout = QVBoxLayout(self.side_panel)
@@ -331,7 +331,7 @@ class UserTaskCard(QFrame):
     def __init__(self, user_task):
         super().__init__()
         self.setObjectName("Card") 
-        self.setFixedSize(255, 65) 
+        self.setFixedSize(305, 65) 
         self.styles = default_theme
         
         self.taskid = user_task.taskid
@@ -365,7 +365,6 @@ class UserTaskCard(QFrame):
         layout.addWidget(self.time_due_label, 2, 0, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
 
         self.date_due_label = QLabel(f"{user_task.date_due}" if user_task.deadline != 0 else "")
-        self.date_due_label.setStyleSheet("padding-right: 5px;")
         layout.addWidget(self.date_due_label, 2, 2, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
         self.delete_btn = QPushButton("✕")
@@ -395,7 +394,7 @@ class UserDivTaskCard(QFrame):
     def __init__(self, user_task):
         super().__init__()
         self.setObjectName("Card") 
-        self.setFixedWidth(280)
+        self.setFixedWidth(305)
         self.styles = default_theme
         
         self.taskid = user_task.taskid
@@ -409,7 +408,7 @@ class UserDivTaskCard(QFrame):
         layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
 
         main_card_container = QWidget()
-        main_card_container.setFixedSize(250, 65)
+        main_card_container.setFixedSize(305, 65)
         main_card_layout = QGridLayout(main_card_container)
         main_card_layout.setSpacing(0)
         main_card_layout.setContentsMargins(5, 2, 5, 2)

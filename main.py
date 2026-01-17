@@ -170,8 +170,11 @@ def main():
                 self.home_page.update_divtask_label(card, divtask_status)
 
         def update_task_status(self, status, taskid):
-            grant_status, reward = task_handler.task_update_status(status, taskid)
-            self.garnt_user_reward(grant_status, reward, taskid)
+            try:
+                grant_status, reward = task_handler.task_update_status(status, taskid)
+                self.garnt_user_reward(grant_status, reward, taskid)
+            finally:
+                return
 
         def garnt_user_reward(self, grant_status, reward, taskid):
             if grant_status == 0:
