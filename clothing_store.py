@@ -86,7 +86,6 @@ class ClothingView(QWidget):
     checkout_completed = pyqtSignal(list, dict) # Updated signal to send list
     money_changed = pyqtSignal(int)
 
-    # 📥 RECEIVING DATA: This __init__ receives the data object from Main
     def __init__(self, clothes_data, styles=default_theme): 
         super().__init__()
         self.clothes_data = clothes_data
@@ -113,14 +112,8 @@ class ClothingView(QWidget):
 
     def update_clothes_data(self, game_data):
         self.clothes_data = game_data
-        self.original_outfit = dict(self.clothes_data.equipped_clothes) if hasattr(self.clothes_data, 'equipped_clothes') else {}
+        self.original_outfit = game_data.equipped_clothes
 
-    def finalize_checkout(self):
-        #OMARRRRRR 
-        inv = self.clothes_data.inventory_clothes
-        inventory_dict = inv if isinstance(inv, dict) else {item: True for item in inv}
-
-    # 📤 SENDING DATA: This function packages list and dictionary and sends to Main
     def finalize_checkout(self):
         # OMARRRRRR 
         # inventory_list is now the source of truth for owned items
