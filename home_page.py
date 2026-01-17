@@ -366,7 +366,7 @@ class UserTaskCard(QFrame):
 
         self.date_due_label = QLabel(f"{user_task.date_due}" if user_task.deadline != 0 else "")
         self.date_due_label.setStyleSheet("padding-right: 5px;")
-        layout.addWidget(self.date_due_label, 2, 1, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self.date_due_label, 2, 2, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
         self.delete_btn = QPushButton("✕")
         self.delete_btn.setFixedSize(25, 25)
@@ -448,7 +448,7 @@ class UserDivTaskCard(QFrame):
 
         self.date_due_label = QLabel(f"{user_task.date_due}" if user_task.deadline != 0 else "")
         self.date_due_label.setStyleSheet("padding-right: 5px;")
-        main_card_layout.addWidget(self.date_due_label, 2, 1, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
+        main_card_layout.addWidget(self.date_due_label, 2, 2, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
 
         self.delete_btn = QPushButton("✕")
         self.delete_btn.setFixedWidth(25)
