@@ -76,7 +76,7 @@ def main():
             self.task_entry.task_ready_signal.connect(task_handler.task_insertion)
 
             self.home_page.request_task_status_update.connect(task_handler.task_update_status)
-            self.home_page.request_subtask_status_update.connect(task_handler.subtask_update_status)
+            self.home_page.request_subtask_status_update.connect(self.update_divtask)
             self.home_page.request_task_removal.connect(self.remove_and_update_tasks)
             
             self.setCentralWidget(self.pages)
@@ -127,6 +127,11 @@ def main():
             global uuid
             user_task_list = task_handler.query_user_tasks(uuid)
             self.home_page.update_task_panel(user_task_list)
+
+        def update_divtask(self, card, status, subtask_id, taskid):
+            task_handler.subtask_update_status(status, subtask_id)
+            divtask_status = task_handler.query_divtask_status(taskid)
+            self.home_page.update_divtask_label(card, divtask_status)
         
         def logout(self):
             self.setWindowTitle('Tikkit - Login')

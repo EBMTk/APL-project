@@ -174,19 +174,23 @@ class TaskDataHandler():
             conn.cursor().execute('UPDATE tasks SET status = ? WHERE taskid = ?', (status, taskid))
             conn.commit()
 
-    def subtask_update_status(self, status, subtask_id, taskid):
+    def subtask_update_status(self, status, subtask_id):
         with self._get_conn() as conn:
             conn.cursor().execute('UPDATE subtasks SET status = ? WHERE subtask_id = ?', (status, subtask_id))
             conn.commit()
 
+    def query_divtask_status(self, taskid):
+        with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT MIN(status) FROM subtasks WHERE parent_id = ?', (taskid,))
             result = cursor.fetchone()
 
-            if result[0] != 0:
-                self.task_update_status(1, taskid)
-            else:
-                self.task_update_status(0, taskid)
+        if result[0] != 0:
+            self.task_update_status(1, taskid)
+        else:
+            self.task_update_status(0, taskid)
+
+        return result[0]
         
 
     def task_deletion(self, taskid):
