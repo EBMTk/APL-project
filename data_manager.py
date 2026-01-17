@@ -67,7 +67,7 @@ class DatabaseManager:
     
     def add_user_eqp_furniture(self, uuid, placed_furniture):
         with self._get_conn() as conn:
-            conn.cursor().execute('DELETE FROM placed_furniture WHERE uuid = ?', (uuid,))
+            conn.cursor().execute('DELETE FROM placed_furniture WHERE uuid = ? AND item_type = ?', (uuid, 'furn'))
             conn.commit()
 
         for item in placed_furniture:
@@ -125,6 +125,45 @@ class DatabaseManager:
             )
             conn.commit()
 
+    def add_user_inv_clothes(self, uuid, item_list):
+        with self._get_conn() as conn:
+            conn.cursor().execute('DELETE FROM inventory WHERE uuid = ? AND item_type = ?', (uuid, 'clothe'))
+            conn.commit()
+
+        for item in item_list:
+            with self._get_conn() as conn:
+                conn.cursor().execute(
+                    'INSERT INTO inventory (uuid, item_name, item_type) VALUES (?, ?, ?)',
+                    (uuid, item, 'clothe')
+                    )
+                conn.commit()
+        
+        return
+    
+    def query_user_eqp_clothes(self, uuid):
+        with self._get_conn() as conn:
+            conn.row_factory = sqlite3.Row 
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT Head, Torso, Legs, Feet FROM equipped_clothes WHERE uuid = (?)", (uuid,))
+            row = cursor.fetchone()
+            
+        return dict(row)
+    
+    def query_user_inv_clothes(self, uuid):
+        inv = []
+
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT item_name FROM inventory WHERE uuid = ? AND item_type = ?', (uuid, 'clothe'))
+            result = cursor.fetchall()
+
+        for i in range(len(result)):
+            inv.append(result[i][0])
+        
+        if not inv:
+            return []
+        else:
+            return inv
 
 class UserManager:
     def __init__(self, db_manager):
@@ -206,11 +245,19 @@ class UserManager:
     
     def save_user_clothe_data(self, uuid, invenory_clothes, equipped_clothes):
         self.db.update_user_eqp_clothes(uuid, equipped_clothes)
+        self.db.add_user_inv_clothes(uuid, invenory_clothes)
+
+    def retrieve_user_clothe_data(self, uuid):
+        equipped_clothes = self.db.query_user_eqp_clothes(uuid)
+        inventory_clothes = self.db.query_user_inv_clothes(uuid)
+
+        return inventory_clothes, equipped_clothes
+
         
 
 
 
-# Inventory Sent: {'Jeans': True, 'T-Shirt': True}
+# Inventory Sent: ['Item', 'Item']
 # Equipped Sent: {'Head': None, 'Torso': None, 'Legs': 'Jeans', 'Feet': None}
 # class GameData:
 #     def __init__(self):

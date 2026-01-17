@@ -9,7 +9,7 @@ class GameData:
         self.money = 300
         self.inventory_clothes = []
         self.worn_clothes = []
-        self.equipped_clothes = []
+        self.equipped_clothes = {}
         self.inventory_furniture = []
         self.placed_furniture = []
 

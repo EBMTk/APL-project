@@ -94,8 +94,15 @@ def main():
             self.game_data.placed_furniture = eqp_furn_list
             # self.game_money = query for mula
             self.furniture_view.load_layout(eqp_furn_list)
+    
+            inv_clothes_list, eqp_clothes_dict = user_man.retrieve_user_clothe_data(current_uuid)
+            self.game_data.inventory_clothes = inv_clothes_list
+            self.game_data.equipped_clothes = eqp_clothes_dict
+            print(eqp_clothes_dict)
+            self.clothing_view.update_clothes_data(self.game_data)
+            self.clothing_view.refresh_page()
+
             self.sync_money()
-            # self.clothing_view.update_clothes_data(data)
             pass
 
         def init_visuals(self):
