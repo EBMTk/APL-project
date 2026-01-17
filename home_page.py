@@ -171,8 +171,8 @@ class RoomScene(QWidget):
                 card = UserDivTaskCard(user_task_list[i])
                 card.update_task_status_database.connect(self.request_task_status_update.emit)
                 card.update_subtask_status_database.connect(
-                    lambda status, subtask_id, taskid: 
-                    self.request_subtask_status_update.emit(card, status, subtask_id, taskid)
+                    lambda status, subtask_id, taskid, c=card: 
+                    self.request_subtask_status_update.emit(c, status, subtask_id, taskid)
                 )
                 card.delete_request.connect(self.request_task_removal.emit)
                 card_list.append(card)

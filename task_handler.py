@@ -169,10 +169,29 @@ class TaskDataHandler():
 
         return user_task_list
     
+    def update_task_grant_status(self, taskid):
+        with self._get_conn() as conn:
+            conn.cursor().execute('UPDATE tasks SET grant_status = ? WHERE taskid = ?', (1, taskid))
+            conn.commit()
+    
+    def query_task_grant_status(self, taskid):
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT grant_status, reward FROM tasks WHERE taskid = ?', (taskid,))
+            result = cursor.fetchone()
+        
+        return result
+    
     def task_update_status(self, status, taskid):
         with self._get_conn() as conn:
             conn.cursor().execute('UPDATE tasks SET status = ? WHERE taskid = ?', (status, taskid))
             conn.commit()
+        
+        if status == 1:
+            grant_status, reward = self.query_task_grant_status(taskid)
+
+            return grant_status, reward
+
 
     def subtask_update_status(self, status, subtask_id):
         with self._get_conn() as conn:
@@ -184,13 +203,20 @@ class TaskDataHandler():
             cursor = conn.cursor()
             cursor.execute('SELECT MIN(status) FROM subtasks WHERE parent_id = ?', (taskid,))
             result = cursor.fetchone()
+        
+        grant_status, reward = self.query_task_grant_status(taskid)
 
         if result[0] != 0:
             self.task_update_status(1, taskid)
+            status = 1
         else:
             self.task_update_status(0, taskid)
+            status = 0
 
-        return result[0]
+        if status == 1:
+            return result[0], grant_status, reward
+        else:
+            return result[0]
         
 
     def task_deletion(self, taskid):

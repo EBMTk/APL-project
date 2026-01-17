@@ -51,6 +51,19 @@ class DatabaseManager:
                 (status_code, uuid)
             )
             conn.commit()
+
+    def update_user_money(self, uuid, money):
+        with self._get_conn() as conn:
+            conn.cursor().execute('UPDATE users SET money = ? WHERE uuid = ?', (money, uuid))
+            conn.commit()
+
+    def query_user_money(self, uuid):
+        with self._get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT money FROM users WHERE uuid = ?', (uuid,))
+            result = cursor.fetchone()
+
+        return result[0]
     
     def add_user_inv_furniture(self, uuid, inv_dict):
         with self._get_conn() as conn:
@@ -229,6 +242,12 @@ class UserManager:
         '''Update user logged status'''
         if user_uuid:
             self.db.update_status(user_uuid, 0)
+
+    def save_user_money(self, uuid, money):
+        self.db.update_user_money(uuid, money)
+
+    def retrive_user_money(self, uuid):
+        return self.db.query_user_money(uuid)
     
     def save_user_furniture_data(self, uuid, inventory_furniture, placed_furniture):
         inv_set = set(inventory_furniture)
