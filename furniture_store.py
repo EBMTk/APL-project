@@ -271,11 +271,6 @@ class FurnitureView(QWidget):
         self.main_layout.addWidget(self.preview, 1)
         self.main_layout.addWidget(self.bottom)
 
-    # def refresh_ui(self):
-    #     if self.main_layout:
-    #         QWidget().setLayout(self.main_layout)
-    #     self.init_ui()
-
     def toggle_sidebar(self):
         cur = self.sidebar_scroll.width()
         target = 250 if cur == 0 else 0

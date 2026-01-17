@@ -37,7 +37,7 @@ class RoomScene(QWidget):
         self.center_layout.setSpacing(0)
 
         self.scene = QGraphicsScene()
-        self.scene.setSceneRect(20, -100, 1080, 520)
+        self.scene.setSceneRect(175, -40, 1080, 520)
 
         # The Camera View
         self.camera = Camera(self.scene, self.styles)
@@ -157,8 +157,10 @@ class RoomScene(QWidget):
         '''Toggle bottom panel visability'''
         if self.side_panel.isVisible():
             self.side_panel.hide()
+            self.scene.setSceneRect(100, -40, 1080, 520)
         else:
             self.side_panel.show()
+            self.scene.setSceneRect(175, -40, 1080, 520)
 
     def resizeEvent(self, event):
         '''Adjust button postions upon resize'''
@@ -218,6 +220,9 @@ class RoomScene(QWidget):
         self.update_game_data(data)
         self.scene.clear()
         self.load_furniture()
+
+        center = self.scene.sceneRect().center()
+        self.camera.centerOn(center.x()-800, center.y())
 
     def get_image_path(self, item_name):
         assets_folder = 'assets'
@@ -288,7 +293,8 @@ class Camera(QGraphicsView):
 
         self.update_button_positions()
         self.settings_btn.move(self.margin, self.margin)
-        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.viewport().setCursor(Qt.CursorShape.ArrowCursor)
         self.money_indicator.move(self.settings_btn.width()+self.margin, self.margin)
 
