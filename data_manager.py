@@ -206,11 +206,11 @@ class UserManager:
             default_space = [   {'name': 'Floor Blank', 'angle_index': 0, 'x': 555, 'y': 172, 'z': 0}, 
                                 {'name': 'Wall1', 'angle_index': 0, 'x': 640, 'y': 64, 'z': 0},
                                 {'name': 'Wall1', 'angle_index': 1, 'x': 558, 'y': 67, 'z': 0}, 
-                                {'name': 'Floor Blank', 'angle_index': 0, 'x': 475, 'y': 229, 'z': 10},
-                                {'name': 'Wall2', 'angle_index': 0, 'x': 717, 'y': 118, 'z': 4}, 
-                                {'name': 'Floor Blank', 'angle_index': 3, 'x': 633, 'y': 228, 'z': 8}, 
-                                {'name': 'Floor Blank', 'angle_index': 1, 'x': 554, 'y': 286, 'z': 11}, 
-                                {'name': 'Wall1', 'angle_index': 1, 'x': 477, 'y': 123, 'z': 12},
+                                {'name': 'Floor Blank', 'angle_index': 0, 'x': 477, 'y': 230, 'z': 3},
+                                {'name': 'Wall2', 'angle_index': 0, 'x': 717, 'y': 119, 'z': 1}, 
+                                {'name': 'Floor Blank', 'angle_index': 3, 'x': 633, 'y': 228, 'z': 2}, 
+                                {'name': 'Floor Blank', 'angle_index': 1, 'x': 554, 'y': 285, 'z': 4}, 
+                                {'name': 'Wall1', 'angle_index': 1, 'x': 477, 'y': 124, 'z': 5},
                             ]
             self.db.add_user_eqp_furniture(self.current_uuid, default_space)
 
@@ -224,7 +224,7 @@ class UserManager:
         '''Ensure conditions before login'''
 
         if not username or not password:
-            return False, 'Please enter both username and password!'
+            return False, 'All fields are required!'
 
         stored_password = self.db.get_password_by_username(username)
 
