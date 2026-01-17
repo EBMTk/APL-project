@@ -80,6 +80,8 @@ def main():
             self.home_page.request_task_removal.connect(self.remove_and_update_tasks)
 
             self.furniture_view.request_save_layout.connect(self.save_furniture_data)
+
+            self.clothing_view.checkout_completed.connect(self.save_clothe_data)
             
             self.setCentralWidget(self.pages)
             
@@ -102,6 +104,10 @@ def main():
         def save_furniture_data(self, inventory_furniture, placed_furniture):
             global uuid
             user_man.save_user_furniture_data(uuid, inventory_furniture, placed_furniture)
+
+        def save_clothe_data(self, inventory_clothes, equipped_clothes):
+            global uuid
+            user_man.save_user_clothe_data(uuid, inventory_clothes, equipped_clothes)
 
         def update_game_data(self, data):
             global uuid

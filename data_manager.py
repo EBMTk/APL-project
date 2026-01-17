@@ -108,6 +108,22 @@ class DatabaseManager:
             row_list.append(row_data)
         
         return row_list
+    
+    def add_user_eqp_clothes(self, uuid):
+        with self._get_conn() as conn:
+            conn.cursor().execute(
+                'INSERT INTO equipped_clothes (uuid, Head, Torso, Legs, Feet) VALUES (?, ?, ?, ?, ?)',
+                (uuid, None, None, None, None)
+                )
+            conn.commit()
+
+    def update_user_eqp_clothes(self, uuid, equipped_clothes):
+        with self._get_conn() as conn:
+            conn.cursor().execute(
+                'UPDATE equipped_clothes SET Head = ?, Torso = ?, Legs = ?, Feet = ? WHERE uuid = ?', 
+                (equipped_clothes['Head'], equipped_clothes['Torso'], equipped_clothes['Legs'], equipped_clothes['Feet'], uuid)
+            )
+            conn.commit()
 
 
 class UserManager:
@@ -142,6 +158,9 @@ class UserManager:
                                 {'name': 'Wall1', 'angle_index': 1, 'x': 477, 'y': 123, 'z': 12},
                             ]
             self.db.add_user_eqp_furniture(self.current_uuid, default_space)
+
+            self.db.add_user_eqp_clothes(self.current_uuid)
+            
             return True, 'Account created successfully!'
         else:
             return False, 'Database error during insertion.'
@@ -184,6 +203,9 @@ class UserManager:
         place_items_list = self.db.query_user_eqp_furniture(uuid)
 
         return inv_furn_list, place_items_list
+    
+    def save_user_clothe_data(self, uuid, invenory_clothes, equipped_clothes):
+        self.db.update_user_eqp_clothes(uuid, equipped_clothes)
         
 
 
