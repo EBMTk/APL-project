@@ -265,7 +265,7 @@ class Camera(QGraphicsView):
     def __init__(self, scene, styles):
         super().__init__(scene)
         self.styles = styles
-        margin = 10
+        self.margin = 10
 
         self.bottom_btn = QPushButton('─', self)
         self.bottom_btn.setFixedSize(60, 20) 
@@ -285,17 +285,19 @@ class Camera(QGraphicsView):
 
         self.money_indicator = QLabel('$0', self)
         self.money_indicator.setStyleSheet(self.styles.money_label_style())
-        self.money_indicator.move(self.settings_btn.width()+margin, margin)
 
         self.update_button_positions()
-        self.settings_btn.move(margin, margin)
+        self.settings_btn.move(self.margin, self.margin)
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+        self.money_indicator.move(self.settings_btn.width()+self.margin, self.margin)
 
     def update_money(self, amount):
         '''Update money display'''
         self.money_indicator.setText(f'${amount}')
         self.money_indicator.adjustSize()
+        self.update_button_positions()
+        
 
     def resizeEvent(self, event):
         '''Adjust button postions upon resize'''
