@@ -54,7 +54,7 @@ class DatabaseManager:
     
     def add_user_inv_furniture(self, uuid, inv_dict):
         with self._get_conn() as conn:
-            conn.cursor().execute('DELETE FROM inventory WHERE uuid = ?', (uuid,))
+            conn.cursor().execute('DELETE FROM inventory WHERE uuid = ? AND item_type = ?', (uuid, 'furn'))
             conn.commit()
 
         for item, quantity in inv_dict.items():
@@ -67,7 +67,7 @@ class DatabaseManager:
     
     def add_user_eqp_furniture(self, uuid, placed_furniture):
         with self._get_conn() as conn:
-            conn.cursor().execute('DELETE FROM placed_furniture WHERE uuid = ? AND item_type = ?', (uuid, 'furn'))
+            conn.cursor().execute('DELETE FROM placed_furniture WHERE uuid = ?', (uuid,))
             conn.commit()
 
         for item in placed_furniture:
@@ -146,8 +146,11 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute(f"SELECT Head, Torso, Legs, Feet FROM equipped_clothes WHERE uuid = (?)", (uuid,))
             row = cursor.fetchone()
-            
-        return dict(row)
+        
+        if not row:
+            return {}
+        else:
+            return dict(row)
     
     def query_user_inv_clothes(self, uuid):
         inv = []
