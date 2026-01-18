@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QWidget, QPushButton, QLabel, QHBoxLayout, 
     QVBoxLayout, QScrollArea, QFrame, QSizePolicy
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QPixmap 
 from store_utils import store_header, default_theme
 
@@ -110,6 +110,22 @@ class ClothingView(QWidget):
         self.cards = {} 
         self.init_ui()
 
+        # Insufficient Funds Label (Matched to Furniture Store style)
+        self.error_label = QLabel("Insufficient Funds", self.preview_container)
+        self.error_label.setStyleSheet("color: red; font-size: 24px; font-weight: bold; background: transparent; border: none;")
+        self.error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.error_label.hide()
+        
+        self.error_timer = QTimer()
+        self.error_timer.setSingleShot(True)
+        self.error_timer.timeout.connect(self.error_label.hide)
+
+    def show_error(self):
+        self.error_label.setFixedSize(self.preview_container.size())
+        self.error_label.show()
+        self.error_label.raise_()
+        self.error_timer.start(2000) # Set time: 2 seconds
+
     def update_clothes_data(self, game_data):
         """Called upon login or data refresh"""
         self.clothes_data = game_data
@@ -154,7 +170,9 @@ class ClothingView(QWidget):
             self.money_changed.emit(self.clothes_data.money)
             self.refresh_page()
             return True
-        return False
+        else:
+            self.show_error()
+            return False
 
     def init_ui(self):
         main_layout = QHBoxLayout(self)
