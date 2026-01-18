@@ -37,7 +37,7 @@ class RoomScene(QWidget):
         self.center_layout.setSpacing(0)
 
         self.scene = QGraphicsScene()
-        self.scene.setSceneRect(175, -40, 1080, 520)
+        self.scene.setSceneRect(145, -40, 1080, 520)
 
         # The Camera View
         self.camera = Camera(self.scene, self.styles)
