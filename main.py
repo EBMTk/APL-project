@@ -1,11 +1,4 @@
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, 
-                             QPushButton, QLabel, QGraphicsScene, 
-                             QGraphicsView, QGraphicsPixmapItem, 
-                             QVBoxLayout, QFrame, QHBoxLayout, 
-                             QSizePolicy, QDialog, QGridLayout, 
-                             QLineEdit, QStackedWidget,)
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QStackedWidget)
 import sys
 
 # Import your modules
@@ -18,6 +11,7 @@ from furniture_store import FurnitureView
 from task_page import TaskEntryWidget
 from task_handler import TaskDataHandler
 
+# Initialize user id global variable as well as database manager, user manager and task handler objects
 uuid = None
 db = DatabaseManager()
 user_man = UserManager(db)
@@ -57,39 +51,42 @@ def main():
             self.home_page.request_clothing_store.connect(self.switch_to_clothing)
             self.home_page.request_furniture_store.connect(self.switch_to_furniture)
 
-            # from home to task entry
+            # Connect from home to task entry
             self.home_page.request_task_entry.connect(self.switch_to_task_entry)
             
-            # from clothing to home and furniture
+            # Connect from clothing to home and furniture
             self.clothing_view.request_home_view.connect(self.switch_to_home)
             self.clothing_view.request_furniture_view.connect(self.switch_to_furniture)
             self.clothing_view.money_changed.connect(self.sync_views)
             
-            # from furniture to home and clothing
+            # Connect from furniture to home and clothing
             self.furniture_view.request_home_view.connect(self.switch_to_home)
             self.furniture_view.request_clothing_view.connect(self.switch_to_clothing)
             self.furniture_view.money_changed.connect(self.sync_views)
 
-            # from task entry to home
+            # Connect from task entry to home
             self.task_entry.request_main_page.connect(self.switch_to_home)
             
-            # link task manager and task entry page
+            # Link task manager and task entry page
             self.task_entry.task_ready_signal.connect(task_handler.task_insertion)
 
+            # Signal requesting change to tasks
             self.home_page.request_task_status_update.connect(self.update_task_status)
             self.home_page.request_subtask_status_update.connect(self.update_divtask_status)
             self.home_page.request_task_removal.connect(self.remove_and_update_tasks)
 
+            # Save data signals
             self.furniture_view.request_save_layout.connect(self.save_furniture_data)
-
             self.clothing_view.checkout_completed.connect(self.save_clothe_data)
             
             self.setCentralWidget(self.pages)
             
-            # Initial money display
-            
         
         def init_game_data(self, current_uuid):
+            '''Initializes game data based of given user ID
+
+            Input: int
+            Output: None'''
             inv_furn_list, eqp_furn_list = user_man.retrieve_user_furniture_data(current_uuid)
             self.game_data.inventory_furniture = inv_furn_list
             self.game_data.placed_furniture = eqp_furn_list
@@ -106,14 +103,26 @@ def main():
             pass
 
         def save_furniture_data(self, inventory_furniture, placed_furniture):
+            '''Saves user furniture data to their uuid
+
+            Input: list, list
+            Output: None'''
             global uuid
             user_man.save_user_furniture_data(uuid, inventory_furniture, placed_furniture)
 
         def save_clothe_data(self, inventory_clothes, equipped_clothes):
+            '''Saves user clothe data to their uuid
+
+            Input: list, dict
+            Output: None'''
             global uuid
             user_man.save_user_clothe_data(uuid, inventory_clothes, equipped_clothes)
         
         def login(self, current_uuid):
+            '''Login sequence initializing app using user data from database
+
+            Input: int
+            Output: None'''
             global uuid
             uuid = current_uuid
             self.update_tasks()
@@ -126,43 +135,74 @@ def main():
             self.pages.setCurrentIndex(1)
         
         def switch_to_home(self):
+            '''Switch to home page
+
+            Input: None
+            Output: None'''
             self.update_tasks()
             self.setWindowTitle('Tikkit')
             self.sync_views()
             self.pages.setCurrentIndex(1)
         
         def switch_to_clothing(self):
+            '''Switch to clothing store page
+
+            Input: None
+            Output: None'''            
             self.setWindowTitle('Tikkit - Clothing Store')
             self.sync_views()
             self.pages.setCurrentIndex(3)
         
         def switch_to_furniture(self):
+            '''Switch to furniture store page
+
+            Input: None
+            Output: None'''
             self.setWindowTitle('Tikkit - Furniture Store')
             self.sync_views()
             self.pages.setCurrentIndex(2)
         
         def switch_to_task_entry(self):
+            '''Switch to task entry page
+
+            Input: None
+            Output: None'''
             global uuid
             self.task_entry.update_uuid(uuid)
             self.setWindowTitle('Tikkit - Add Task')
             self.pages.setCurrentIndex(4)
         
         def sync_views(self):
-            """Makes money same throughout views"""
+            '''Refresh pages to enure updated visuals relative to data
+
+            Input: None
+            Output: None'''
             self.clothing_view.refresh_page() 
             self.furniture_view.refresh_page(self.game_data)
             self.home_page.refresh_view(self.game_data)
 
         def remove_and_update_tasks(self, taskid):
+            '''Removes task
+
+            Input: int
+            Output: None'''
             task_handler.task_deletion(taskid)
             self.update_tasks()
 
         def update_tasks(self):
+            '''Refreshes task panel
+
+            Input: None
+            Output: None'''
             global uuid
             user_task_list = task_handler.query_user_tasks(uuid)
             self.home_page.update_task_panel(user_task_list)
 
         def update_divtask_status(self, card, status, subtask_id, taskid):
+            '''Updates divided task's status and attempts reward grant
+
+            Input: object, int, int, int
+            Output: None'''
             task_handler.subtask_update_status(status, subtask_id)
             try:
                 divtask_status, grant_status, reward = task_handler.query_divtask_status(taskid)
@@ -173,6 +213,10 @@ def main():
                 self.home_page.update_divtask_label(card, divtask_status)
 
         def update_task_status(self, status, taskid):
+            '''Updates task's status and attempts reward grant
+
+            Input: int, int
+            Output: None'''
             try:
                 grant_status, reward = task_handler.task_update_status(status, taskid)
                 self.garnt_user_reward(grant_status, reward, taskid)
@@ -180,12 +224,20 @@ def main():
                 return
 
         def garnt_user_reward(self, grant_status, reward, taskid):
+            '''Grants user task reward if first completion
+
+            Input: int, int, int
+            Output: None'''
             if grant_status == 0:
                 task_handler.update_task_grant_status(taskid)
                 self.game_data.money += reward
             self.sync_views()
         
         def logout(self):
+            '''Logout sequence initializing app for next user
+
+            Input: None
+            Output: None'''
             self.setWindowTitle('Tikkit - Login')
             global uuid
             user_man.logout(uuid)
@@ -198,13 +250,17 @@ def main():
             uuid = None
         
         def closeEvent(self, event):
+            '''Logout sequence upon closing the app
+
+            Input: object
+            Output: None'''
             global uuid
             if uuid:
                 user_man.logout(uuid)
                 user_man.save_user_money(uuid, self.game_data.money)
-                self.furniture_view.clear_room_area()
-                self.home_page.refresh_view(GameData())
             return super().closeEvent(event)
+        
+    ### Intialize App and Window ###
     
     app = QApplication(sys.argv)
     window = MainWindow()
