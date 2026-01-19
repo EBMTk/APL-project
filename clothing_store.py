@@ -11,6 +11,10 @@ from store_utils import store_header, default_theme
 # Represents an individual item in the shop with its name, price, and actions.
 class ClothingCard(QFrame):
     def __init__(self, name, price, parent_view, styles):
+        '''Initializes the individual clothing item card
+
+        Input: str, int, ClothingView, dict
+        Output: None'''
         super().__init__()
         self.name = name
         self.price = price
@@ -54,6 +58,10 @@ class ClothingCard(QFrame):
 
     #wear or try button logic acording to ownership and if already worn
     def update_card_state(self):
+        '''Updates the card UI based on ownership and worn status
+
+        Input: None
+        Output: None'''
         data = self.parent_view.clothes_data
         is_owned = self.name in data.inventory_clothes
         is_active = self.name in data.worn_clothes
@@ -76,11 +84,19 @@ class ClothingCard(QFrame):
 
     #uses attempt purchase to check for buying and then updates gui acordingly.
     def buy_item(self):
+        '''Attempts to buy the item and updates the card if successful
+
+        Input: None
+        Output: None'''
         if self.parent_view.attempt_purchase(self.name, self.price):
             self.update_card_state()
     
     #looks at current text of the wear/try button and desides what it does.
     def handle_action(self):
+        '''Determines if the item should be worn or taken off based on button text
+
+        Input: None
+        Output: None'''
         if self.btn_action.text() == "Take Off":
             self.parent_view.unwear_item(self.name)
         else:
@@ -95,6 +111,10 @@ class ClothingView(QWidget):
     money_changed = pyqtSignal(int)
 
     def __init__(self, clothes_data, styles=default_theme): 
+        '''Initializes the main clothing shop view
+
+        Input: Data object, dict
+        Output: None'''
         super().__init__()
         self.clothes_data = clothes_data
         self.styles = styles
@@ -130,6 +150,10 @@ class ClothingView(QWidget):
 
     # Handles the temporary display of the error message
     def show_error(self):
+        '''Shows the insufficient funds error label for a short duration
+
+        Input: None
+        Output: None'''
         self.error_label.setFixedSize(self.preview_container.size())
         self.error_label.show()
         self.error_label.raise_()
@@ -137,6 +161,10 @@ class ClothingView(QWidget):
 
     # Synchronizes the view data with the latest game data
     def update_clothes_data(self, game_data):
+        '''Updates the view with new game data
+
+        Input: Data object
+        Output: None'''
         """Called upon login or data refresh"""
         self.clothes_data = game_data
         # puts loaded equiped into actual visuals
@@ -147,6 +175,10 @@ class ClothingView(QWidget):
 
     # Saves current worn items to the inventory and emits checkout signal
     def finalize_checkout(self):
+        '''Finalizes the outfit by keeping owned items and reverting unowned tries
+
+        Input: None
+        Output: None'''
         # inventory_list is now the source of truth for owned items so its used to revert try items(let me explain this please mostafa)
         inventory_list = self.clothes_data.inventory_clothes
         current_worn = self.clothes_data.worn_clothes
@@ -167,6 +199,10 @@ class ClothingView(QWidget):
 
     # Checks if user has enough money to buy and adds item to inventory if successful
     def attempt_purchase(self, item_name, item_price):
+        '''Processes a purchase and updates the money and inventory
+
+        Input: str, int
+        Output: bool'''
         if self.clothes_data.money >= item_price:
             self.clothes_data.money -= item_price
             
@@ -187,6 +223,10 @@ class ClothingView(QWidget):
 
     # Constructs the main user interface with preview on the left and shop on the right
     def init_ui(self):
+        '''Sets up the initial GUI layout for the shop
+
+        Input: None
+        Output: None'''
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(20)
@@ -253,16 +293,28 @@ class ClothingView(QWidget):
 
     #checkout before switching to Home
     def handle_home_click(self):
+        '''Finalizes checkout and emits signal to go home
+
+        Input: None
+        Output: None'''
         self.finalize_checkout()
         self.request_home_view.emit()
 
     #checkout before switching to Furniture
     def handle_furniture_click(self):
+        '''Finalizes checkout and emits signal to go to furniture view
+
+        Input: None
+        Output: None'''
         self.finalize_checkout()
         self.request_furniture_view.emit()
 
     # Equips an item in the correct category slot
     def wear_item(self, item_name):
+        '''Adds a specific item to the character worn list
+
+        Input: str
+        Output: None'''
         cat = self.get_category_of(item_name)
         # Update snapshot if item owned
         if item_name in self.clothes_data.inventory_clothes:
@@ -275,6 +327,10 @@ class ClothingView(QWidget):
 
     # Removes an item from the character preview and pust on the basic none outfit 
     def unwear_item(self, item_name):
+        '''Removes a specific item from the character worn list
+
+        Input: str
+        Output: None'''
         cat = self.get_category_of(item_name)
         if item_name in self.clothes_data.inventory_clothes:
             self.original_outfit[cat] = None
@@ -285,12 +341,20 @@ class ClothingView(QWidget):
 
     #function to find which body slot an item belongs to(by going through map and checking for name)
     def get_category_of(self, item_name):
+        '''Finds the category slot associated with an item name
+
+        Input: str
+        Output: str or None'''
         for category, items in self.category_map.items():
             if item_name in items: return category
         return None
 
     # Redraws the character preview based on currently worn clothes
     def refresh_page(self): 
+        '''Redraws character images and updates money/card states
+
+        Input: None
+        Output: None'''
         self.header.update_money(self.clothes_data.money)
         for part, label in self.slots.items():
             active_item = next((i for i in self.clothes_data.worn_clothes if self.get_category_of(i) == part), None)
