@@ -2,6 +2,7 @@ from llama_cpp import Llama
 import numpy as np
 import re
 import sqlite3
+from data_manager import DatabaseConnect as DBC
 
 class UserTask():
     def __init__(self, uuid, taskid, name, date_due, time_due, deadline, status, subdivisions, reward, subtasks, grant_status):
@@ -17,6 +18,7 @@ class UserTask():
         self.grant_status = grant_status
         self.subtasks = subtasks
 
+### Creating AI Engine class to allow interactions with local AI model ###
 class AIEngine():
     def __init__(self):
         self.llm = Llama(
@@ -27,6 +29,10 @@ class AIEngine():
         )
 
     def get_subtask_list(self, task_name, num_steps):
+        '''Prompts AI to generate subtask list for divided task
+
+        Input: str, int
+        Output: dict'''
         list_msg = [
             {
                 "role": "system", 
@@ -51,6 +57,10 @@ class AIEngine():
         return sub_tasks_dict
     
     def get_task_diff(self, task_name):
+        '''Prompts AI to generate difficulty scaling for task
+
+        Input: str
+        Output: int'''
         diff_msg = [
             {
                 "role": "system", 
@@ -75,6 +85,10 @@ class AIEngine():
         return difficulty
     
     def split_task_list(self, task_list):
+        '''Splits task string user RE to segements
+
+        Input: str
+        Output: dict'''
         segments = re.split(r'(\d+)\.', task_list)
         sub_tasks_dict = {}
 
@@ -87,14 +101,16 @@ class AIEngine():
     
 ai_engine = AIEngine()
 
-class TaskDataHandler():
-    def __init__(self, db_path='appdata/app_data'):
-        self.db_path = db_path
-
-    def _get_conn(self):
-        return sqlite3.connect(self.db_path)
+### Creating Task Handler to interact with database for task relvant queries ###
+class TaskDataHandler(DBC):
+    def __init__(self):
+        super().__init__()
     
     def task_insertion(self, task_specs):
+        '''Insert task and subtasks if the task is divided
+
+        Input: object
+        Output: int'''
         try:
             with self._get_conn() as conn:
                 curr = conn.cursor()
@@ -121,6 +137,10 @@ class TaskDataHandler():
                     return 0
                 
     def query_user_tasks(self, uuid):
+        '''Collect user tasks from database
+
+        Input: int
+        Output: list'''
         taskid_list = []
 
         with self._get_conn() as conn:
@@ -170,11 +190,19 @@ class TaskDataHandler():
         return user_task_list
     
     def update_task_grant_status(self, taskid):
+        '''Updates grant status in database
+
+        Input: int
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute('UPDATE tasks SET grant_status = ? WHERE taskid = ?', (1, taskid))
             conn.commit()
     
     def query_task_grant_status(self, taskid):
+        '''Collects grant status data from database
+
+        Input: int
+        Output: tuple'''
         with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT grant_status, reward FROM tasks WHERE taskid = ?', (taskid,))
@@ -183,6 +211,10 @@ class TaskDataHandler():
         return result
     
     def task_update_status(self, status, taskid):
+        '''Updates task status and if applicable, returns grant status and reward
+
+        Input: int
+        Output: int, int'''
         with self._get_conn() as conn:
             conn.cursor().execute('UPDATE tasks SET status = ? WHERE taskid = ?', (status, taskid))
             conn.commit()
@@ -194,11 +226,19 @@ class TaskDataHandler():
 
 
     def subtask_update_status(self, status, subtask_id):
+        '''Updates individual subtask status
+
+        Input: int, int
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute('UPDATE subtasks SET status = ? WHERE subtask_id = ?', (status, subtask_id))
             conn.commit()
 
     def query_divtask_status(self, taskid):
+        '''Updates divided tasks' subtask status and updates its own status accordingly, if applicable, returns grant status and reward
+
+        Input: int
+        Output: int, int int'''
         with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT MIN(status) FROM subtasks WHERE parent_id = ?', (taskid,))
@@ -220,6 +260,10 @@ class TaskDataHandler():
         
 
     def task_deletion(self, taskid):
+        '''Deletes task and its subtasks if task is divided
+
+        Input: int
+        Output: None'''
         tempid = taskid
         with self._get_conn() as conn:
             cursor = conn.cursor()

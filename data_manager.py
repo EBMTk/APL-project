@@ -1,11 +1,15 @@
 import sqlite3
 
-class DatabaseManager:
+class DatabaseConnect():
     def __init__(self, db_path='appdata/app_data'):
         self.db_path = db_path
 
     def _get_conn(self):
         return sqlite3.connect(self.db_path)
+
+class DatabaseManager(DatabaseConnect):
+    def __init__(self):
+        super().__init__()
 
     def user_exists(self, username):
         '''Returns true if username is found'''
