@@ -2,40 +2,25 @@ from PyQt6.QtWidgets import (
     QWidget, QPushButton, QLabel, QHBoxLayout, 
     QVBoxLayout, QFrame, QSizePolicy,
 )
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtSignal, QTimer, QVariantAnimation, QPoint
 from store_utils import store_header, HorizontalScrollArea, default_theme
 import os
 from PyQt6.QtGui import QPixmap
 
+### UI COMPONENTS ###
+
 class RoomFrame(QFrame):
-    """A special Frame that keeps its children centered when resized"""
+    """A Frame with stable coordinates to act as the container for placed furniture"""
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.last_size = None
 
-    def resizeEvent(self, event):
-        if self.last_size:
-            old_w = self.last_size.width()
-            old_h = self.last_size.height()
-            new_w = event.size().width()
-            new_h = event.size().height()
-            
-            dx = (new_w - old_w) // 2
-            dy = (new_h - old_h) // 2
-            
-            for child in self.findChildren(QLabel):
-                if hasattr(child, 'item_data'):
-                    new_x = child.x() + dx
-                    new_y = child.y() + dy
-                    child.move(new_x, new_y)
-                    child.item_data['x'] = new_x
-                    child.item_data['y'] = new_y
-                    
-        self.last_size = event.size()
-        super().resizeEvent(event)
 
 class FurnitureCard(QFrame):
+    '''The card for a furniture item in the sidebar'''
     def __init__(self, name, price, image_paths, parent_view, styles):
+        '''Creates the furniture card UI with an image, name price and buttons for placing and buying
+        input: str,int, list of str, object, object'''
+        # parent_view here would be the FurnitureView which holds all the data and stuff
         super().__init__()
         self.name = name
         self.price = price
@@ -43,7 +28,6 @@ class FurnitureCard(QFrame):
         self.styles = styles
         self.image_paths = image_paths
 
-        # SET FIXED SIZE FOR UNIFORMITY IN SIDEBAR
         self.setFixedHeight(110)
         self.setFixedWidth(200) 
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -65,6 +49,7 @@ class FurnitureCard(QFrame):
         self.img_lbl.setFixedSize(80, 80)
         self.img_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
+        # Just grab the first image in the list to use as the icon
         if image_paths:
             pixmap = QPixmap(image_paths[0])
             scaled_pixmap = pixmap.scaled(75, 75, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
@@ -102,6 +87,9 @@ class FurnitureCard(QFrame):
             }}
             QPushButton:hover {{ background: {self.styles.col_hover};}}
         """)
+        
+        # We use a lambda here to pass arguments (name, paths) to the function. 
+        # Without lambda function would run immediately when the button is created.
         self.btn_preview.clicked.connect(lambda: self.parent_view.place_item(self.name, self.image_paths))
 
         self.btn_buy = QPushButton("Buy")
@@ -117,6 +105,7 @@ class FurnitureCard(QFrame):
         self.update_ownership()
 
     def update_ownership(self):
+        '''checks user inventory and update card visually'''
         count = self.parent_view.game_data.inventory_furniture.count(self.name)
         if count > 0:
             self.btn_buy.setText(f"Buy ({count} Owned)")
@@ -124,8 +113,11 @@ class FurnitureCard(QFrame):
             self.btn_buy.setText("Buy")
     
     def buy_item(self):
+        '''triggers the purchase logic from parent view'''
         success = self.parent_view.attempt_purchase(self.name, self.price)
         if success: self.update_ownership()
+
+### MAIN INTERFACE ###
 
 class FurnitureView(QWidget):
     request_clothing_view = pyqtSignal()
@@ -134,6 +126,8 @@ class FurnitureView(QWidget):
     money_changed = pyqtSignal(int)
 
     def __init__(self, game_data):
+        '''Initialize main view, loads in assets and builds the UI
+        input: object'''
         super().__init__()
         self.game_data = game_data
         self.styles = default_theme
@@ -142,16 +136,19 @@ class FurnitureView(QWidget):
         self.init_ui()
 
     def init_ui(self):
+        '''Constructs layout: sidebar, bottom bar, room area'''
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(10, 10, 10, 10) 
         self.main_layout.setSpacing(10)
 
+        # Container for the top section (Left Room + Right Sidebar)
         self.preview = QFrame()
         self.preview.setStyleSheet(self.styles.frame_style())
 
         preview_layout = QHBoxLayout(self.preview)
         preview_layout.setContentsMargins(15, 15, 15, 15)
 
+        # Left side (header and room)
         left = QWidget()
         left.setStyleSheet("border: none;")
         left_layout = QVBoxLayout(left)
@@ -175,12 +172,16 @@ class FurnitureView(QWidget):
 
         title_row_layout.addWidget(title)
         title_row_layout.addStretch()
-        title_row_layout.addWidget(self.btn_save)  
+        title_row_layout.addWidget(self.btn_save)   
 
-        self.room_area = RoomFrame()
-        self.room_area.setStyleSheet(f'background-color: {self.styles.col_primary}; border: 2px solid {self.styles.col_border}; border-radius:10px;')
-        self.room_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.room_layout = QVBoxLayout(self.room_area)
+        self.room_container = QWidget()
+        self.room_container.setStyleSheet("background: transparent; border: none;")
+        
+        # The room_area is the floor where items are placed.
+        # It's inside room_container but we move it manually
+        self.room_area = RoomFrame(self.room_container)
+        self.room_area.setFixedSize(1000, 700) 
+        self.room_area.setStyleSheet(f'background-color: transparent;')
         
         self.btn_go_clothing = QPushButton("Browse Clothing")
         self.btn_go_clothing.setFixedHeight(45) 
@@ -190,11 +191,11 @@ class FurnitureView(QWidget):
 
         left_layout.addWidget(self.header)
         left_layout.addWidget(title_row)
-        left_layout.addStretch()
-        left_layout.addWidget(self.room_area, 1)
-        left_layout.addStretch()
+        left_layout.addWidget(self.room_container, 1) 
         left_layout.addWidget(self.btn_go_clothing)
+        self.update_room_pos_from_size()
 
+        # right side (sidebar)
         self.side_container = QWidget()
         self.side_container.setStyleSheet("border: none;")
         side_layout = QHBoxLayout(self.side_container)
@@ -208,7 +209,7 @@ class FurnitureView(QWidget):
         self.btn_open_side.clicked.connect(self.toggle_sidebar)
 
         self.sidebar_scroll = HorizontalScrollArea()
-        self.sidebar_scroll.setFixedWidth(0) 
+        self.sidebar_scroll.setFixedWidth(0) # Start closed (width 0)
         self.sidebar_scroll.setWidgetResizable(True)
         self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.sidebar_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -234,6 +235,7 @@ class FurnitureView(QWidget):
         preview_layout.addWidget(left, 1)
         preview_layout.addWidget(self.side_container)
 
+        # Bottom (category area)
         self.bottom = QWidget()
         self.bottom.setStyleSheet("border: none;")
         bottom_layout = QVBoxLayout(self.bottom)
@@ -252,7 +254,7 @@ class FurnitureView(QWidget):
         grabber.clicked.connect(self.toggle_bottom)
         
         self.scroll_container = QWidget()
-        self.scroll_container.setMaximumHeight(0) 
+        self.scroll_container.setMaximumHeight(0) # Start closed (height 0)
         self.scroll_container.setStyleSheet("background: transparent; border: none;")
         scroll_cont_layout = QVBoxLayout(self.scroll_container)
         scroll_cont_layout.setContentsMargins(0,0,0,0)
@@ -288,7 +290,10 @@ class FurnitureView(QWidget):
                 }}
                 QPushButton:hover {{ background: {self.styles.col_hover}; }}
             """)
-            btn.clicked.connect(lambda _, cat=category: self.load_category(cat))
+            # we use 'cat=category' inside the lambda to capture the CURRENT value of category
+            # If we just did lambda:load(category), every button loads the last category in the loop.
+            # the _, is throwaway variable bec btns return info we dont use
+            btn.clicked.connect(lambda _, cat=category: self.load_category(cat)) 
             cat_layout.addWidget(btn)
         
         self.scroll.setWidget(cat_widget)
@@ -302,12 +307,48 @@ class FurnitureView(QWidget):
         self.main_layout.addWidget(self.preview, 1)
         self.main_layout.addWidget(self.bottom)
 
+    def get_default_pos(self):
+        '''calc the default position based on window size
+        output: tuple (int,int)'''
+        if self.width() < 1300:
+            return -10, 0
+        return 100, 60
+
+    def update_room_pos_from_size(self):
+        '''updates room frame position when window starts or initializes'''
+        x, y = self.get_default_pos()
+        self.room_area.move(x, y)
+
     def toggle_sidebar(self):
+        '''Animates opening closing of the right sidebar and adjusts the rooms position'''
         cur = self.sidebar_scroll.width()
         target = 230 if cur == 0 else 0 
+        
+        def_left, _ = self.get_default_pos()
+        start_pos = self.room_area.pos()
+        
+        # Calculate where the room should move to when sidebar opens
+        if def_left > 0:
+            open_x = 20
+        else:
+            open_x = def_left - 150
+            
+        target_x = open_x if cur == 0 else def_left
+        target_pos = QPoint(target_x, start_pos.y())
+
         self.sidebar_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        
+        # Animate Width changes
         self.anim1 = QPropertyAnimation(self.sidebar_scroll, b"minimumWidth")
         self.anim2 = QPropertyAnimation(self.sidebar_scroll, b"maximumWidth")
+        
+        # Animate Room Position (Sliding it over)
+        self.pos_anim = QPropertyAnimation(self.room_area, b"pos")
+        self.pos_anim.setDuration(450)
+        self.pos_anim.setStartValue(start_pos)
+        self.pos_anim.setEndValue(target_pos)
+        self.pos_anim.setEasingCurve(QEasingCurve.Type.OutQuint) 
+
         for a in (self.anim1, self.anim2):
             a.setDuration(450)
             a.setStartValue(cur)
@@ -315,25 +356,58 @@ class FurnitureView(QWidget):
             a.setEasingCurve(QEasingCurve.Type.OutQuint)
             a.finished.connect(lambda: self.on_side_anim_finished(target))
             a.start()
-    
-    def on_side_anim_finished(self, target):
-        if target > 0: self.sidebar_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        
+        self.pos_anim.start()
 
     def toggle_bottom(self):
+        '''Aniated the bottom panel and positions the room properly'''
         cur = self.scroll_container.maximumHeight()
         target = 130 if cur == 0 else 0 
+        
+        _, def_top = self.get_default_pos()
+        start_pos = self.room_area.pos()
+        
+        # Shift room up if bottom panel opens
+        target_y = (def_top - 100) if cur == 0 else def_top
+        target_pos = QPoint(start_pos.x(), target_y)
+
         self.anim_bot = QPropertyAnimation(self.scroll_container, b"maximumHeight")
         self.anim_bot.setDuration(500)
         self.anim_bot.setStartValue(cur)
         self.anim_bot.setEndValue(target)
         self.anim_bot.setEasingCurve(QEasingCurve.Type.OutQuint)
+        
+        self.pos_bot_anim = QPropertyAnimation(self.room_area, b"pos")
+        self.pos_bot_anim.setDuration(500)
+        self.pos_bot_anim.setStartValue(start_pos)
+        self.pos_bot_anim.setEndValue(target_pos)
+        self.pos_bot_anim.setEasingCurve(QEasingCurve.Type.OutQuint)
+
         self.anim_bot.start()
+        self.pos_bot_anim.start()
+    
+    def on_side_anim_finished(self, target):
+        '''makes scrollbars work after animiation finishes'''
+        if target > 0: self.sidebar_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+    def resizeEvent(self, event):
+        '''makes sure the room is centered even when the window is resized'''
+        # Only center if panels are closed, otherwise it ruin anim
+        if self.sidebar_scroll.width() == 0 and self.scroll_container.maximumHeight() == 0:
+            self.update_room_pos_from_size()
+        super().resizeEvent(event)
 
     def load_category(self, category):
+        ''' puts the furniture cards inside sidepanel, for each category
+        input: str'''
         if self.sidebar_scroll.width() == 0: self.toggle_sidebar() 
+        
+        # Clean up old items: Loop backwards or check count to remove widgets
+        # We skip index 0 because thats the  title label
         while self.sidebar_layout.count() > 1: 
             item = self.sidebar_layout.takeAt(1).widget()
             if item: item.deleteLater()
+            
         for item_data in self.furniture_items.get(category):
             name = item_data[0]
             price = item_data[1]
@@ -342,17 +416,23 @@ class FurnitureView(QWidget):
             self.sidebar_layout.addWidget(card, 0, Qt.AlignmentFlag.AlignHCenter) 
 
     def update_game_data(self, data):
+        '''updates reference to gamedata
+        input: object'''
         self.game_data = data      
 
     def refresh_page(self, data):
+        '''refreshes displays based on new data'''
         self.header.update_money(self.game_data.money)
         self.update_game_data(data)
+        # Update every card in the sidebar to show correct "Owned" count
         for i in range(1, self.sidebar_layout.count()):
             widget = self.sidebar_layout.itemAt(i).widget()
             if isinstance(widget, FurnitureCard):
                 widget.update_ownership()
         
     def show_error_message(self, text, slot=0):
+        '''displays temp error msg label
+        input: str, int'''
         existing_same_msg = [c for c in self.room_area.findChildren(QLabel) if c.text() == text and c.isVisible()]
         if existing_same_msg: return
 
@@ -366,10 +446,13 @@ class FurnitureView(QWidget):
         offset = slot * 35
         lbl.move(base_x, base_y - offset)
         lbl.show()
-        # Consistent set time of 2 seconds
+        # Kill the label after 2 seconds
         QTimer.singleShot(2000, lbl.deleteLater)
 
     def attempt_purchase(self, item_name, item_price):
+        '''makes sure user has enough money and processes the purchase
+        input: str,int
+        output: bool'''
         if self.game_data.money >= item_price:
             self.game_data.money -= item_price
             self.game_data.inventory_furniture.append(item_name)
@@ -381,8 +464,11 @@ class FurnitureView(QWidget):
             return False
         
     def place_item(self, item_name, image_paths):
+        '''Makes an item a Draggable furniture if the user has it in their inventor
+        input: str, list of str'''
         placed_list = self.game_data.placed_furniture
         owned_qty = self.game_data.inventory_furniture.count(item_name)
+        # Count how many of the item are already on the floor
         placed_qty = sum(1 for item in placed_list if item['name'] == item_name)
         
         if owned_qty == 0:
@@ -390,9 +476,12 @@ class FurnitureView(QWidget):
             return
         
         if placed_qty < owned_qty:
+            # Calculate Z index so new item appears on top (max z + 1)
             current_max_z = max((item.get('z', 0) for item in self.game_data.placed_furniture), default=0)
             new_item_data = {'name': item_name, 'angle_index': 0, 'x': 0, 'y': 0, 'z': current_max_z + 1}
             self.game_data.placed_furniture.append(new_item_data)
+            
+            # Create the draggable object
             item_lbl = DraggableFurniture(self.room_area, image_paths, new_item_data, self)
             item_lbl.setStyleSheet("border: none; background: transparent;")
             item_lbl.show()
@@ -409,6 +498,8 @@ class FurnitureView(QWidget):
             self.show_error_message(f'All {item_name}s placed', slot=1)
     
     def load_item_image(self):
+        '''get info from the assets in the asset library and builds the store categories
+        output: dict with list of tuples'''
         assets_folder = "assets"
         data = {}
         grouped_items = {} 
@@ -422,6 +513,7 @@ class FurnitureView(QWidget):
                 name_no_extension = os.path.splitext(filename)[0] 
                 parts = name_no_extension.split('_')
 
+                # Logic to extract price andname based on filename structure
                 if len(parts) >= 4 and parts[-1].isdigit() and len(parts[-1]) == 1 and parts[-2].isdigit():
                     category = parts[0]
                     try: price = int(parts[-2])
@@ -445,18 +537,22 @@ class FurnitureView(QWidget):
             paths.sort() 
             if cat not in data: data[cat] = []
             data[cat].append((name, price, paths))
-        return data  
+        return data   
       
     def save_layout(self):
+        '''ouptuts a signal withh the current inventory and what items are placed'''
         self.request_save_layout.emit(self.game_data.inventory_furniture, self.game_data.placed_furniture)    
 
     def load_layout(self, data=None):
+        '''gets the placed items from saved items and sorts by Z index
+        input: list of dict'''
         placed_data = data
         if not placed_data: return
         placed_data.sort(key=lambda x: x.get('z', 0))
 
         for item_data in placed_data:
             image_paths = []
+            # Find the images for this item name
             for category, items in self.furniture_items.items():
                 for name, price, paths in items:
                     if name == item_data['name']:
@@ -471,11 +567,16 @@ class FurnitureView(QWidget):
                 item_lbl.show()
     
     def refresh_z_order(self):
+        '''Stack widgets in the right order based on z axis'''
         widgets = self.room_area.findChildren(DraggableFurniture)
+        # Stack widgets in the right order based on z axis using .raise_()
         sorted_widgets = sorted(widgets, key=lambda w: w.item_data.get('z', 0))
         for w in sorted_widgets: w.raise_()
 
     def get_specific_item_images(self, item_name):
+        '''gets images if items are locked 
+        input: str
+        output: list of str'''
         assets_folder = 'assets'
         paths = []
         if not os.path.exists(assets_folder): return []
@@ -486,18 +587,25 @@ class FurnitureView(QWidget):
         return paths
 
     def clear_room_area(self):
+        '''removes draggable items from room'''
         widgets = self.room_area.findChildren(DraggableFurniture)
         for w in widgets: w.deleteLater()               
     
+### INTERACTIV OBJECTS ###
+
 class DraggableFurniture(QLabel):
+    '''The actual item in the room handles the dragging, rotating and deleting'''
     def __init__(self, parent, image_paths, item_data, main_view):
+        '''initializes the draggable item, sets the cursors look, loads the right image
+        input: QWidget, List of str, dict, object'''
         super().__init__(parent)
         self.image_paths = image_paths 
         self.item_data = item_data
         self.angle_index = self.item_data.get('angle_index', 0)
         self.drag_start_position = None
-        self.parent_view = main_view
+        self.parent_view = main_view 
         self.scale_factor = 0.8
+        # Items with "Floor" or "Wall" in name cannot be moved by user
         self.is_locked = "Floor" in self.item_data['name'] or "Wall" in self.item_data['name']
         
         if 'z' not in self.item_data: self.item_data['z'] = 0
@@ -506,10 +614,12 @@ class DraggableFurniture(QLabel):
 
         self.setStyleSheet("border: none; background: transparent;")
         self.update_image()
+        # If we have saved coordinates, restore them
         if 'x' in self.item_data and 'y' in self.item_data:
             self.move(self.item_data['x'], self.item_data['y'])
 
     def update_image(self):
+        '''updates the image displayed based on the current rotated version'''
         if not self.image_paths: return 
         current_image_path = self.image_paths[self.angle_index]
         if os.path.exists(current_image_path):
@@ -521,56 +631,74 @@ class DraggableFurniture(QLabel):
             self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def rotate(self):
+        ''' goes thru the available images to make it look like its rotating'''
         if len(self.image_paths) > 1:
-            self.angle_index = (self.angle_index + 1) % len(self.image_paths)
+            # Use modulo (%) so if index is 3 and len is 4, 4%4 becomes 0 (loops back to start)
+            self.angle_index = (self.angle_index + 1) % len(self.image_paths) 
             self.item_data['angle_index'] = self.angle_index
             self.update_image()
 
     def mousePressEvent(self, event):
+        '''handles the logic when u click with mouse, this is overriding the og function inherited from QWidget which is inherted by Qlabel
+         input: object, built into PyQt6 instance from QMouseEvent '''
         if self.is_locked: return
         self.setFocus()
-        if event.button() == Qt.MouseButton.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton: # this is Enum, Qt is the library, MouseButton is the Enum class, LeftButton is enum member
             self.drag_start_position = event.pos()
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
         elif event.button() == Qt.MouseButton.RightButton:
             self.rotate()
     
     def mouseMoveEvent(self, event):
+        '''Calc the new pos during dragging, but makes sure it stays within boundaries'''
         if self.is_locked: return
-        if event.buttons() & Qt.MouseButton.LeftButton and self.drag_start_position:
+        # Ensure left button is held AND we have a start position
+        if event.buttons() & Qt.MouseButton.LeftButton and self.drag_start_position: 
             delta = event.pos() - self.drag_start_position
             target_pos = self.pos() + delta
+            
+            # Boundary calcs
             parent_rect = self.parentWidget()
             max_x = parent_rect.width() - self.width()
             max_y = parent_rect.height() - self.height()
+            
+            # Clamp the values so item doesn't fly off screen
             safex = max(0, min(target_pos.x(), max_x))
             safey = max(0, min(target_pos.y(), max_y))
+            
             self.move(safex, safey)
             self.item_data['x'] = safex
             self.item_data['y'] = safey
 
     def mouseReleaseEvent(self, event):
+        '''Resets the cursor and drag state when mouse is realease'''
         if self.is_locked: return
         self.setCursor(Qt.CursorShape.OpenHandCursor)
         self.drag_start_position = None
 
     def mouseDoubleClickEvent(self, event):
+        '''Brings item to front by incrementing the z value'''
         if self.is_locked: return
         if event.button() == Qt.MouseButton.LeftButton:
             siblings = self.parentWidget().findChildren(DraggableFurniture)
             current_max_z = 0
+            # Find the highest Z currently in the room
             for sib in siblings:
                 z = sib.item_data.get('z', 0)
                 if z > current_max_z: current_max_z = z
+            
+            # Set this item to max + 1 so it on top
             self.item_data['z'] = current_max_z + 1
             self.raise_()
 
     def delete_item(self):
+        '''remove item from placed furniture'''
         if self.item_data in self.parent_view.game_data.placed_furniture:
             self.parent_view.game_data.placed_furniture.remove(self.item_data)
             self.deleteLater()
 
     def keyPressEvent(self, event):
+        '''waits for the delete or backspace to trigger dletion'''
         if self.is_locked: return
         if event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
             self.delete_item()

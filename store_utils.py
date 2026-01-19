@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 
 ### DATA ###
 class GameData:
+    '''Central data, stores everything for player, money outfit, placed items etc'''
     def __init__(self):
         self.money = 300
         self.inventory_clothes = []
@@ -15,6 +16,7 @@ class GameData:
 
 ### UNIVERSAL_STYLES ###
 class UniversalStyles:
+    '''takes colorpallete and makes consistent stylesheet strings for the ui'''
     def __init__(self, primary, secondary, border, hover, text, scroll, scroll_hover):
         self.col_primary = primary
         self.col_secondary = secondary
@@ -233,7 +235,8 @@ class UniversalStyles:
 
 ### STORE_HEADER ###
 class store_header(QWidget):
-    home_clicked = pyqtSignal()
+    '''reusable nav bar for home button and money disp'''
+    home_clicked = pyqtSignal() #used for nav in the main
 
     def __init__(self, styles):
         super().__init__()
@@ -271,6 +274,7 @@ class store_header(QWidget):
 
 ### HORIZONTAL SCROLL AREA ###
 class HorizontalScrollArea(QScrollArea):
+    '''custom area to allow horizontal scrolling'''
     def wheelEvent(self, event):
       """Enable horizontal scrolling with mouse wheel"""
       delta = event.angleDelta().y()

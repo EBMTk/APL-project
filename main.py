@@ -29,7 +29,8 @@ def main():
             super().__init__()
             
             self.setWindowTitle('Tikkit - Login')
-            self.setFixedSize(300, 310)            
+            self.resize(300, 310)
+            self.setMinimumSize(300, 310)            
 
             self.game_data = GameData()
                       
@@ -120,6 +121,8 @@ def main():
             self.init_game_data(current_uuid)
             self.sync_views()
             self.setMinimumSize(1280, 720)
+            self.resize(1280, 720)
+            self.showMaximized()
             self.pages.setCurrentIndex(1)
         
         def switch_to_home(self):
