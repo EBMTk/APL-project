@@ -12,14 +12,20 @@ class DatabaseManager(DatabaseConnect):
         super().__init__()
 
     def user_exists(self, username):
-        '''Returns true if username is found'''
+        '''Checks if username is present in database
+
+        Input: str
+        Output: bool'''
         with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT 1 FROM users WHERE username = ?', (username,))
             return cursor.fetchone() is not None
 
     def insert_user(self, username, password):
-        '''Adding user to database'''
+        '''Attempts to insert user into database
+
+        Input: str, str
+        Output: bool'''
         try:
             with self._get_conn() as conn:
                 conn.cursor().execute(
@@ -32,7 +38,10 @@ class DatabaseManager(DatabaseConnect):
             return False
 
     def get_password_by_username(self, username):
-        '''Extract user password, None if not found'''
+        '''Collects password from username
+
+        Input: str
+        Output: str or None'''
         with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT password FROM users WHERE username = ?', (username,))
@@ -40,7 +49,10 @@ class DatabaseManager(DatabaseConnect):
             return result[0] if result else None
 
     def get_uuid(self, username):
-        '''Returns uuid for user'''
+        '''Collects user id from username
+
+        Input: str
+        Output: int or None'''
         with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT uuid FROM users WHERE username = ?', (username,))
@@ -48,7 +60,10 @@ class DatabaseManager(DatabaseConnect):
             return result[0] if result else None
 
     def update_status(self, uuid, status_code):
-        '''Updates logged_status'''
+        '''Updates specific user id's logged status
+
+        Input: int, int
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute(
                 'UPDATE users SET logged_status = ? WHERE uuid = ?', 
@@ -57,11 +72,19 @@ class DatabaseManager(DatabaseConnect):
             conn.commit()
 
     def update_user_money(self, uuid, money):
+        '''Updates specific user id's money value
+
+        Input: int, int
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute('UPDATE users SET money = ? WHERE uuid = ?', (money, uuid))
             conn.commit()
 
     def query_user_money(self, uuid):
+        '''Collects specific user id's money value from database
+
+        Input: int
+        Output: int'''
         with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT money FROM users WHERE uuid = ?', (uuid,))
@@ -70,6 +93,10 @@ class DatabaseManager(DatabaseConnect):
         return result[0]
     
     def add_user_inv_furniture(self, uuid, inv_dict):
+        '''Adds specific user id's furniture inventory to database after clearing old items
+
+        Input: int, dict
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute('DELETE FROM inventory WHERE uuid = ? AND item_type = ?', (uuid, 'furn'))
             conn.commit()
@@ -83,6 +110,10 @@ class DatabaseManager(DatabaseConnect):
                 conn.commit()
     
     def add_user_eqp_furniture(self, uuid, placed_furniture):
+        '''Adds specific user id's placed furniture to database after clearing old items
+
+        Input: int, list
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute('DELETE FROM placed_furniture WHERE uuid = ?', (uuid,))
             conn.commit()
@@ -98,6 +129,10 @@ class DatabaseManager(DatabaseConnect):
         return
 
     def query_user_inv_furniture(self, uuid):
+        '''Collects specific user id's inventory furniture from database
+
+        Input: int
+        Output: list'''
         with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute('SELECT item_name, quantity FROM inventory WHERE uuid = ? AND item_type = ?', (uuid, 'furn'))
@@ -113,6 +148,10 @@ class DatabaseManager(DatabaseConnect):
 
 
     def query_user_eqp_furniture(self, uuid):
+        '''Collects specific user id's placed furniture from database
+
+        Input: int
+        Output: list'''
         with self._get_conn() as conn:
             conn.row_factory = sqlite3.Row 
             cursor = conn.cursor()
@@ -127,6 +166,10 @@ class DatabaseManager(DatabaseConnect):
         return row_list
     
     def add_user_eqp_clothes(self, uuid):
+        '''Adds specific user id's empty equipped clothes template to database
+
+        Input: int
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute(
                 'INSERT INTO equipped_clothes (uuid, Head, Torso, Legs, Feet) VALUES (?, ?, ?, ?, ?)',
@@ -135,6 +178,10 @@ class DatabaseManager(DatabaseConnect):
             conn.commit()
 
     def update_user_eqp_clothes(self, uuid, equipped_clothes):
+        '''Updates specific user id's equipped clothes to database
+
+        Input: int, dict
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute(
                 'UPDATE equipped_clothes SET Head = ?, Torso = ?, Legs = ?, Feet = ? WHERE uuid = ?', 
@@ -143,6 +190,10 @@ class DatabaseManager(DatabaseConnect):
             conn.commit()
 
     def add_user_inv_clothes(self, uuid, item_list):
+        '''Adds specific user id's clothing inventory to database after clearing old items
+
+        Input: int, dict
+        Output: None'''
         with self._get_conn() as conn:
             conn.cursor().execute('DELETE FROM inventory WHERE uuid = ? AND item_type = ?', (uuid, 'clothe'))
             conn.commit()
@@ -158,6 +209,10 @@ class DatabaseManager(DatabaseConnect):
         return
     
     def query_user_eqp_clothes(self, uuid):
+        '''Collects specific user id's equipped clothes from database
+
+        Input: int
+        Output: dict'''
         with self._get_conn() as conn:
             conn.row_factory = sqlite3.Row 
             cursor = conn.cursor()
@@ -170,6 +225,10 @@ class DatabaseManager(DatabaseConnect):
             return dict(row)
     
     def query_user_inv_clothes(self, uuid):
+        '''Collects specific user id's inevntory clothes from database
+
+        Input: int
+        Output: list'''
         inv = []
 
         with self._get_conn() as conn:
@@ -185,13 +244,16 @@ class DatabaseManager(DatabaseConnect):
         else:
             return inv
 
-class UserManager:
+class UserManager():
     def __init__(self, db_manager):
         self.db = db_manager
         self.current_uuid = None
 
     def validate_and_register(self, username, password, confirm_password):
-        '''Ensure conditions before registeration'''
+        '''Ensures specific conditons met before registering user
+
+        Input: str, str, str
+        Output: bool, str'''
 
         if not username or not password:
             return False, 'All fields are required!'
@@ -225,8 +287,10 @@ class UserManager:
             return False, 'Database error during insertion.'
 
     def validate_and_login(self, username, password):
-        '''Ensure conditions before login'''
+        '''Ensure specific conditions met before login
 
+        Input: str, str
+        Output: bool, str'''
         if not username or not password:
             return False, 'All fields are required!'
 
@@ -243,17 +307,32 @@ class UserManager:
             return False, 'Incorrect password!'
 
     def logout(self, user_uuid):
-        '''Update user logged status'''
+        '''Updates specific user id's logged status to 0
+
+        Input: int
+        Output: None'''
         if user_uuid:
             self.db.update_status(user_uuid, 0)
 
     def save_user_money(self, uuid, money):
+        '''Updates specific user id's currency value through data manager
+
+        Input: int, int
+        Output: None'''
         self.db.update_user_money(uuid, money)
 
     def retrive_user_money(self, uuid):
+        '''Updates specific user id's currency value through data manager
+
+        Input: int
+        Output: int'''
         return self.db.query_user_money(uuid)
     
     def save_user_furniture_data(self, uuid, inventory_furniture, placed_furniture):
+        '''Updates specific user id's complete furniture data through data manager
+
+        Input: int, list, list
+        Output: int'''
         inv_set = set(inventory_furniture)
         inv_dict = {}
 
@@ -264,16 +343,28 @@ class UserManager:
         self.db.add_user_eqp_furniture(uuid, placed_furniture)
 
     def retrieve_user_furniture_data(self, uuid):
+        '''Collect specific user id's complete furniture data through data manager
+
+        Input: int
+        Output: list, list'''
         inv_furn_list = self.db.query_user_inv_furniture(uuid)
         place_items_list = self.db.query_user_eqp_furniture(uuid)
 
         return inv_furn_list, place_items_list
     
     def save_user_clothe_data(self, uuid, invenory_clothes, equipped_clothes):
+        '''Updates specific user id's complete clothing data through data manager
+
+        Input: int, list, dict
+        Output: None'''
         self.db.update_user_eqp_clothes(uuid, equipped_clothes)
         self.db.add_user_inv_clothes(uuid, invenory_clothes)
 
     def retrieve_user_clothe_data(self, uuid):
+        '''Collect specific user id's complete clothing data through data manager
+
+        Input: int
+        Output: list, dict'''
         equipped_clothes = self.db.query_user_eqp_clothes(uuid)
         inventory_clothes = self.db.query_user_inv_clothes(uuid)
 
