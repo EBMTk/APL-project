@@ -35,7 +35,7 @@ def main():
             self.furniture_view = FurnitureView(self.game_data)
             self.task_entry = TaskEntryWidget(default_theme)
             
-            # stack with all pages
+            # Stack with all pages
             self.pages = QStackedWidget()
             self.pages.addWidget(self.login_page)      # Index 0
             self.pages.addWidget(self.home_page)       # Index 1
