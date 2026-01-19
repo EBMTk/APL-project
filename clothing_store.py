@@ -6,7 +6,9 @@ from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QPixmap 
 from store_utils import store_header, default_theme
 
-### CLOTHING_CARD ### 
+
+#CLOTHING_CARD CLASS
+# Represents an individual item in the shop with its name, price, and actions.
 class ClothingCard(QFrame):
     def __init__(self, name, price, parent_view, styles):
         super().__init__()
@@ -15,6 +17,7 @@ class ClothingCard(QFrame):
         self.parent_view = parent_view
         self.styles = styles
 
+        #GUI Styling and Layout Initialization
         self.setFixedHeight(120)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setStyleSheet(f"QFrame {{ background-color: {self.styles.col_secondary}; border: 1.5px solid {self.styles.col_border}; border-radius: 15px; }}")
@@ -22,6 +25,7 @@ class ClothingCard(QFrame):
         layout = QHBoxLayout(self)
         info_layout = QVBoxLayout()
         
+        #labels for name and price of items
         self.lbl_name = QLabel(name)
         self.lbl_price = QLabel(f"${price}")
         self.lbl_name.setStyleSheet(f"color: {self.styles.col_text}; font-size: 16px; font-weight: bold; border: none;")
@@ -30,12 +34,13 @@ class ClothingCard(QFrame):
         info_layout.addWidget(self.lbl_name)
         info_layout.addWidget(self.lbl_price)
 
+        #buttons for interacting with the item
         btn_layout = QVBoxLayout()
-        self.btn_action = QPushButton("Try") 
-        self.btn_action.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_action = QPushButton("Try") #try/wear button
+        self.btn_action.setCursor(Qt.CursorShape.PointingHandCursor)#makes cursor into hand
         self.btn_action.clicked.connect(self.handle_action)
 
-        self.btn_buy = QPushButton("Buy")
+        self.btn_buy = QPushButton("Buy")#buy button
         self.btn_buy.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_buy.setStyleSheet(f"QPushButton {{ background: {self.styles.col_border}; color: {self.styles.col_primary}; border:none; border-radius: 8px; font-weight: bold; padding: 4px; }} QPushButton:hover {{ background: {self.styles.col_hover};}}")
         self.btn_buy.clicked.connect(self.buy_item)
@@ -47,6 +52,7 @@ class ClothingCard(QFrame):
         layout.addLayout(btn_layout) 
         self.update_card_state()
 
+    #wear or try button logic acording to ownership and if already worn
     def update_card_state(self):
         data = self.parent_view.clothes_data
         is_owned = self.name in data.inventory_clothes
@@ -68,17 +74,20 @@ class ClothingCard(QFrame):
             self.btn_action.setText("Wear" if is_owned else "Try")
             self.btn_action.setStyleSheet(f"QPushButton {{ background: {self.styles.col_secondary}; border: 2px solid {self.styles.col_text}; border-radius: 8px; padding: 4px; color: {self.styles.col_text}; font-weight: bold; }}")
 
+    #uses attempt purchase to check for buying and then updates gui acordingly.
     def buy_item(self):
         if self.parent_view.attempt_purchase(self.name, self.price):
             self.update_card_state()
     
+    #looks at current text of the wear/try button and desides what it does.
     def handle_action(self):
         if self.btn_action.text() == "Take Off":
             self.parent_view.unwear_item(self.name)
         else:
             self.parent_view.wear_item(self.name)
 
-### CLOTHING_VIEW ###
+# CLOTHING_VIEW CLASS
+# Main view for the clothing shop. (has the character)
 class ClothingView(QWidget):
     request_furniture_view = pyqtSignal()
     request_home_view = pyqtSignal()
@@ -90,9 +99,7 @@ class ClothingView(QWidget):
         self.clothes_data = clothes_data
         self.styles = styles
         
-        # Initial snapshot
-        self.original_outfit = dict(self.clothes_data.equipped_clothes) if hasattr(self.clothes_data, 'equipped_clothes') else {}
-
+        # Defines which items belong to which body part catagory
         self.category_map = {
             "Head": ["Hat", "Sunglasses", "Kanye", "Silly", "Crazy", "Bird", "Sword", "Divine_General"],
             "Torso": ["T-Shirt", "Sweater"],
@@ -100,6 +107,7 @@ class ClothingView(QWidget):
             "Feet": ["Sneakers", "Boots"]
         }
 
+        #available items and their prices
         self.clothing_items = [
             ("T-Shirt", 20), ("Jeans", 40), ("Sweater", 60), ("Sneakers", 50),
             ("Hat", 15), ("Sunglasses", 25), ("Skirt", 70), ("Boots", 80),
@@ -110,7 +118,7 @@ class ClothingView(QWidget):
         self.cards = {} 
         self.init_ui()
 
-        # Insufficient Funds Label (Matched to Furniture Store style)
+        # Insufficient Funds Label for when not enough money
         self.error_label = QLabel("Insufficient Funds", self.preview_container)
         self.error_label.setStyleSheet("color: red; font-size: 24px; font-weight: bold; background: transparent; border: none;")
         self.error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -120,24 +128,26 @@ class ClothingView(QWidget):
         self.error_timer.setSingleShot(True)
         self.error_timer.timeout.connect(self.error_label.hide)
 
+    # Handles the temporary display of the error message
     def show_error(self):
         self.error_label.setFixedSize(self.preview_container.size())
         self.error_label.show()
         self.error_label.raise_()
-        self.error_timer.start(2000) # Set time: 2 seconds
+        self.error_timer.start(2000) #2 seconds
 
+    # Synchronizes the view data with the latest game data
     def update_clothes_data(self, game_data):
         """Called upon login or data refresh"""
         self.clothes_data = game_data
         # puts loaded equiped into actual visuals
         self.clothes_data.worn_clothes = [v for v in game_data.equipped_clothes.values() if v]
-        # Set the snapshot to match current DB data
+        #Updates snapshot to match current data
         self.original_outfit = dict(game_data.equipped_clothes)
         self.refresh_page()
 
+    # Saves current worn items to the inventory and emits checkout signal
     def finalize_checkout(self):
-        # OMARRRRRR 
-        # inventory_list is now the source of truth for owned items
+        # inventory_list is now the source of truth for owned items so its used to revert try items(let me explain this please mostafa)
         inventory_list = self.clothes_data.inventory_clothes
         current_worn = self.clothes_data.worn_clothes
         final_equipped = {}
@@ -152,9 +162,10 @@ class ClothingView(QWidget):
         
         self.clothes_data.equipped_clothes = final_equipped
         self.clothes_data.worn_clothes = [v for v in final_equipped.values() if v]
-
+        # OMARRRRRR 
         self.checkout_completed.emit(inventory_list, final_equipped)
 
+    # Checks if user has enough money to buy and adds item to inventory if successful
     def attempt_purchase(self, item_name, item_price):
         if self.clothes_data.money >= item_price:
             self.clothes_data.money -= item_price
@@ -172,13 +183,15 @@ class ClothingView(QWidget):
             return True
         else:
             self.show_error()
-            return False
+            return False#prevents change of clothes or button
 
+    # Constructs the main user interface with preview on the left and shop on the right
     def init_ui(self):
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(20)
 
+        # Left Panel: Character Preview and Navigation
         left_container = QFrame()
         left_container.setStyleSheet(self.styles.frame_style())
         left_layout = QVBoxLayout(left_container)
@@ -187,11 +200,13 @@ class ClothingView(QWidget):
         self.header.home_clicked.connect(self.handle_home_click)
         left_layout.addWidget(self.header)
 
+        # Preview Character Slots
         self.preview_container = QWidget()
         self.preview_vbox = QVBoxLayout(self.preview_container)
         self.preview_vbox.setSpacing(0)
         self.preview_vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        #make boxes and set their sizes acording to each body part of the character
         self.slots = {}
         dims = {"Head": (200, 154), "Torso": (200, 139), "Legs": (200, 139), "Feet": (200, 45)}
         for part, (w, h) in dims.items():
@@ -212,6 +227,7 @@ class ClothingView(QWidget):
         self.btn_go_furniture.clicked.connect(self.handle_furniture_click)
         left_layout.addWidget(self.btn_go_furniture)
 
+        # Right Panel: Scrollable Item Catalog
         right_container = QFrame()
         right_container.setStyleSheet(self.styles.frame_style())
         right_layout = QVBoxLayout(right_container)
@@ -235,24 +251,29 @@ class ClothingView(QWidget):
         main_layout.addWidget(right_container, 1)
         self.refresh_page()
 
+    #checkout before switching to Home
     def handle_home_click(self):
         self.finalize_checkout()
         self.request_home_view.emit()
 
+    #checkout before switching to Furniture
     def handle_furniture_click(self):
         self.finalize_checkout()
         self.request_furniture_view.emit()
 
+    # Equips an item in the correct category slot
     def wear_item(self, item_name):
         cat = self.get_category_of(item_name)
-        # Update snapshot if owned
+        # Update snapshot if item owned
         if item_name in self.clothes_data.inventory_clothes:
             self.original_outfit[cat] = item_name
 
+        #Removes item of same cat before adding newest item in same cat that was just worn
         self.clothes_data.worn_clothes = [i for i in self.clothes_data.worn_clothes if self.get_category_of(i) != cat]
         self.clothes_data.worn_clothes.append(item_name)
         self.refresh_page()
 
+    # Removes an item from the character preview and pust on the basic none outfit 
     def unwear_item(self, item_name):
         cat = self.get_category_of(item_name)
         if item_name in self.clothes_data.inventory_clothes:
@@ -262,11 +283,13 @@ class ClothingView(QWidget):
             self.clothes_data.worn_clothes.remove(item_name)
         self.refresh_page()
 
+    #function to find which body slot an item belongs to(by going through map and checking for name)
     def get_category_of(self, item_name):
         for category, items in self.category_map.items():
             if item_name in items: return category
         return None
 
+    # Redraws the character preview based on currently worn clothes
     def refresh_page(self): 
         self.header.update_money(self.clothes_data.money)
         for part, label in self.slots.items():
